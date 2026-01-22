@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FaSearch, FaShoppingCart, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaUser, FaSignOutAlt, FaShoppingBag } from 'react-icons/fa';
 
 function Home() {
   const navigate = useNavigate();
@@ -77,6 +77,12 @@ function Home() {
                     <FaUser />
                     <span className="font-medium">{user?.name}</span>
                   </div>
+                  <button
+                    onClick={() => navigate('/my-orders')}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <FaShoppingBag /> My Orders
+                  </button>
                   {user?.role === 'ADMIN' && (
                     <button
                       onClick={() => navigate('/admin/dashboard')}
@@ -203,7 +209,7 @@ function Home() {
                   <p className="text-gray-500 text-sm mb-2">{product.category}</p>
                   <div className="flex justify-between items-center">
                     <p className="text-2xl font-bold text-blue-600">
-                      ${product.price}
+                      ₹{product.price}
                     </p>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       product.isLowStock

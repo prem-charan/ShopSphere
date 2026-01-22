@@ -123,7 +123,7 @@ function Dashboard() {
                       <p className="text-slate-500 text-sm m-0 mt-1">{product.category}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <span className="text-blue-600 font-semibold text-base">${product.price}</span>
+                      <span className="text-blue-600 font-semibold text-base">₹{product.price}</span>
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                         product.isLowStock 
                           ? 'bg-orange-100 text-orange-800' 

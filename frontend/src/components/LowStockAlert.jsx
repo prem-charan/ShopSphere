@@ -137,7 +137,7 @@ function LowStockAlert() {
 
                 <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
                   <span className="text-slate-500 text-sm">Price:</span>
-                  <span className="font-semibold text-blue-600 text-base">${product.price}</span>
+                  <span className="font-semibold text-blue-600 text-base">₹{product.price}</span>
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-yellow-100 rounded-md my-3 border-0">

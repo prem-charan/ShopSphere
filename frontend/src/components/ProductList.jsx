@@ -203,7 +203,7 @@ function ProductList() {
                         {product.category}
                       </span>
                     </td>
-                    <td className="p-3 border-b border-slate-200 font-semibold text-blue-600">${product.price}</td>
+                    <td className="p-3 border-b border-slate-200 font-semibold text-blue-600">₹{product.price}</td>
                     <td className="p-3 border-b border-slate-200">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                         product.isLowStock 

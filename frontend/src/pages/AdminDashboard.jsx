@@ -1,14 +1,22 @@
 import React from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProductList from '../components/ProductList';
 import LowStockAlert from '../components/LowStockAlert';
 import Dashboard from '../components/Dashboard';
+import OrderList from '../components/OrderList';
+import StoreInventoryManagement from '../components/StoreInventoryManagement';
 import { FaSignOutAlt, FaHome } from 'react-icons/fa';
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
+
+  const isActive = (path) => {
+    return location.pathname === path || 
+           (path === '/admin/dashboard' && location.pathname === '/admin');
+  };
 
   const handleLogout = () => {
     logout();
@@ -48,22 +56,54 @@ function AdminDashboard() {
       {/* Admin Sub Navigation */}
       <nav className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-5">
-          <div className="flex gap-6 py-3">
+          <div className="flex gap-6 py-3 overflow-x-auto">
             <Link
               to="/admin/dashboard"
-              className="no-underline text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 hover:text-indigo-600 transition-all"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/dashboard') || isActive('/admin')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
             >
               Dashboard
             </Link>
             <Link
               to="/admin/products"
-              className="no-underline text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 hover:text-indigo-600 transition-all"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/products')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
             >
               Manage Products
             </Link>
             <Link
+              to="/admin/orders"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/orders')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
+            >
+              Manage Orders
+            </Link>
+            <Link
+              to="/admin/store-inventory"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/store-inventory')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
+            >
+              Store Inventory
+            </Link>
+            <Link
               to="/admin/low-stock"
-              className="no-underline text-gray-700 font-medium px-4 py-2 rounded-md hover:bg-gray-100 hover:text-indigo-600 transition-all"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/low-stock')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
             >
               Low Stock Alerts
             </Link>
@@ -78,6 +118,8 @@ function AdminDashboard() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/products" element={<ProductList />} />
+            <Route path="/orders" element={<OrderList />} />
+            <Route path="/store-inventory" element={<StoreInventoryManagement />} />
             <Route path="/low-stock" element={<LowStockAlert />} />
           </Routes>
         </div>

@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
-import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag } from 'react-icons/fa';
+import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations } from '../services/orderAPI';
+import { useAuth } from '../context/AuthContext';
+import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt } from 'react-icons/fa';
 
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [orderType, setOrderType] = useState('ONLINE');
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [selectedStore, setSelectedStore] = useState('');
+  const [availableStores, setAvailableStores] = useState([]);
+  const [allStores, setAllStores] = useState([]);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   useEffect(() => {
     fetchProduct();
+    fetchStores();
   }, [id]);
 
   const fetchProduct = async () => {
@@ -19,11 +32,88 @@ function ProductDetail() {
       setLoading(true);
       const response = await productAPI.getProductById(id);
       setProduct(response.data.data);
+      // Fetch stores where this product is available
+      const storesResponse = await getStoresWithProduct(id);
+      setAvailableStores(storesResponse.data || []);
     } catch (err) {
       setError('Failed to load product details');
       console.error('Error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStores = async () => {
+    try {
+      const response = await getAllStoreLocations();
+      setAllStores(response.data || []);
+    } catch (err) {
+      console.error('Error fetching stores:', err);
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowCheckoutModal(true);
+    setOrderError('');
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // Validation
+    if (quantity < 1) {
+      setOrderError('Quantity must be at least 1');
+      return;
+    }
+
+    if (quantity > product.stockQuantity) {
+      setOrderError('Insufficient stock available');
+      return;
+    }
+
+    if (orderType === 'ONLINE' && !shippingAddress.trim()) {
+      setOrderError('Please enter your shipping address');
+      return;
+    }
+
+    if (orderType === 'IN_STORE' && !selectedStore) {
+      setOrderError('Please select a store location');
+      return;
+    }
+
+    try {
+      setOrderLoading(true);
+      setOrderError('');
+
+      const orderData = {
+        customerId: user.userId,
+        orderType: orderType,
+        orderItems: [{
+          productId: product.productId,
+          quantity: quantity,
+          unitPrice: product.price
+        }],
+        shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
+        storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
+        notes: ''
+      };
+
+      const response = await createOrder(orderData);
+      
+      // Success! Navigate to order details
+      navigate(`/order/${response.data.orderId}`);
+    } catch (err) {
+      console.error('Error placing order:', err);
+      setOrderError(err.response?.data?.message || 'Failed to place order. Please try again.');
+    } finally {
+      setOrderLoading(false);
     }
   };
 
@@ -92,7 +182,7 @@ function ProductDetail() {
 
               <div className="flex items-baseline gap-4 mb-6">
                 <p className="text-5xl font-bold text-blue-600">
-                  ${product.price}
+                  ₹{product.price}
                 </p>
                 <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
                   product.isLowStock
@@ -133,13 +223,60 @@ function ProductDetail() {
                 </div>
               )}
 
+              {/* Quantity Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quantity
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 text-center border border-gray-300 rounded-lg py-2"
+                    min="1"
+                    max={product.stockQuantity}
+                  />
+                  <button
+                    onClick={() => setQuantity(Math.min(product.stockQuantity, quantity + 1))}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    +
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    (Max: {product.stockQuantity})
+                  </span>
+                </div>
+              </div>
+
+              {/* Store Availability */}
+              {availableStores.length > 0 && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h3 className="font-semibold text-green-800 mb-2">Available at stores:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {availableStores.map((store, index) => (
+                      <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        {store}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="space-y-3 mt-auto">
-                <button className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl">
-                  Add to Cart
-                </button>
-                <button className="w-full py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-medium hover:bg-blue-50 transition-colors">
-                  Buy Now
+                <button
+                  onClick={handleBuyNow}
+                  disabled={product.stockQuantity === 0}
+                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
                 </button>
               </div>
 
@@ -160,7 +297,7 @@ function ProductDetail() {
           <div className="bg-white p-6 rounded-xl shadow-md text-center">
             <div className="text-3xl mb-2">🚚</div>
             <h3 className="font-semibold mb-1">Free Shipping</h3>
-            <p className="text-sm text-gray-600">On orders over $50</p>
+            <p className="text-sm text-gray-600">On orders over ₹500</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md text-center">
             <div className="text-3xl mb-2">🔒</div>
@@ -173,6 +310,145 @@ function ProductDetail() {
             <p className="text-sm text-gray-600">30-day return policy</p>
           </div>
         </div>
+
+        {/* Checkout Modal */}
+        {showCheckoutModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4">Complete Your Order</h2>
+
+              {orderError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  {orderError}
+                </div>
+              )}
+
+              {/* Order Summary */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-2">Order Summary</h3>
+                <div className="flex justify-between mb-2">
+                  <span>{product.name}</span>
+                  <span>₹{product.price}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Quantity</span>
+                  <span>x {quantity}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total</span>
+                  <span>₹{(product.price * quantity).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Order Type Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order Type
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setOrderType('ONLINE')}
+                    className={`p-4 border-2 rounded-lg transition-colors ${
+                      orderType === 'ONLINE'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <FaShoppingCart className={`text-2xl mx-auto mb-2 ${
+                      orderType === 'ONLINE' ? 'text-blue-600' : 'text-gray-600'
+                    }`} />
+                    <div className="font-medium">Online</div>
+                    <div className="text-xs text-gray-600">Ship to address</div>
+                  </button>
+                  <button
+                    onClick={() => setOrderType('IN_STORE')}
+                    className={`p-4 border-2 rounded-lg transition-colors ${
+                      orderType === 'IN_STORE'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <FaStore className={`text-2xl mx-auto mb-2 ${
+                      orderType === 'IN_STORE' ? 'text-blue-600' : 'text-gray-600'
+                    }`} />
+                    <div className="font-medium">In-Store</div>
+                    <div className="text-xs text-gray-600">Pick up from store</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Conditional Fields */}
+              {orderType === 'ONLINE' ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <FaMapMarkerAlt className="inline mr-1" />
+                    Shipping Address *
+                  </label>
+                  <textarea
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="3"
+                    placeholder="Enter your complete shipping address"
+                  />
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <FaStore className="inline mr-1" />
+                    Select Store *
+                  </label>
+                  <select
+                    value={selectedStore}
+                    onChange={(e) => setSelectedStore(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Choose a store</option>
+                    {availableStores.length > 0 ? (
+                      availableStores.map((store, index) => (
+                        <option key={index} value={store}>
+                          {store} (Available)
+                        </option>
+                      ))
+                    ) : (
+                      allStores.map((store, index) => (
+                        <option key={index} value={store}>
+                          {store}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {availableStores.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ This product is available at the selected stores
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCheckoutModal(false);
+                    setOrderError('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                  disabled={orderLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={orderLoading}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {orderLoading ? 'Placing Order...' : 'Place Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

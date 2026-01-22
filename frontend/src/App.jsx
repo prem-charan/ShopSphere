@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ProductDetail from './pages/ProductDetail';
 import AdminDashboard from './pages/AdminDashboard';
+import MyOrders from './components/MyOrders';
+import OrderDetail from './components/OrderDetail';
 
 function App() {
   return (
@@ -24,6 +26,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProductDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-orders"
+            element={
+              <ProtectedRoute>
+                <MyOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/order/:orderId"
+            element={
+              <ProtectedRoute>
+                <OrderDetail />
               </ProtectedRoute>
             }
           />
