@@ -136,7 +136,7 @@ function Dashboard() {
                 ))}
               </div>
               <Link 
-                to="/products" 
+                to="/" 
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-transparent border-2 border-blue-600 text-blue-600 rounded-md font-medium hover:bg-blue-600 hover:text-white transition-all no-underline"
               >
                 View All Products
@@ -175,7 +175,7 @@ function Dashboard() {
             </div>
           </div>
           <Link 
-            to="/low-stock" 
+            to="/admin/low-stock" 
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors no-underline"
           >
             View Low Stock Products

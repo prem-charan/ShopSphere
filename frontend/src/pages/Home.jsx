@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FaSearch, FaShoppingCart, FaUser, FaSignOutAlt, FaShoppingBag } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart } from 'react-icons/fa';
+import CustomerHeader from '../components/CustomerHeader';
 
 function Home() {
   const navigate = useNavigate();
@@ -54,70 +55,24 @@ function Home() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    window.location.reload();
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-blue-600">ShopSphere</h1>
-              <p className="text-sm text-gray-500">Your One-Stop Shop</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {isAuthenticated() ? (
-                <>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <FaUser />
-                    <span className="font-medium">{user?.name}</span>
-                  </div>
-                  <button
-                    onClick={() => navigate('/my-orders')}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <FaShoppingBag /> My Orders
-                  </button>
-                  {user?.role === 'ADMIN' && (
-                    <button
-                      onClick={() => navigate('/admin/dashboard')}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Admin Panel
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    <FaSignOutAlt /> Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => navigate('/signup')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Sign Up
-                  </button>
-                </>
-              )}
-            </div>
+      {/* Customer Header */}
+      <CustomerHeader />
+      
+      {/* Admin Quick Access */}
+      {isAuthenticated() && user?.role === 'ADMIN' && (
+        <div className="bg-indigo-100 border-b border-indigo-200">
+          <div className="max-w-7xl mx-auto px-4 py-2">
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="text-indigo-700 hover:text-indigo-900 font-medium text-sm"
+            >
+              → Go to Admin Dashboard
+            </button>
           </div>
         </div>
-      </header>
+      )}
 
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">

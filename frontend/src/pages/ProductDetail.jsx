@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations } from '../services/orderAPI';
 import { useAuth } from '../context/AuthContext';
+import PaymentModal from '../components/PaymentModal';
+import CustomerHeader from '../components/CustomerHeader';
 import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt } from 'react-icons/fa';
 
 function ProductDetail() {
@@ -21,6 +23,8 @@ function ProductDetail() {
   const [allStores, setAllStores] = useState([]);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState(null);
 
   useEffect(() => {
     fetchProduct();
@@ -107,14 +111,28 @@ function ProductDetail() {
 
       const response = await createOrder(orderData);
       
-      // Success! Navigate to order details
-      navigate(`/order/${response.data.orderId}`);
+      // Order created successfully, now show payment modal
+      setCreatedOrder(response.data);
+      setShowCheckoutModal(false);
+      setShowPaymentModal(true);
     } catch (err) {
       console.error('Error placing order:', err);
       setOrderError(err.response?.data?.message || 'Failed to place order. Please try again.');
     } finally {
       setOrderLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = (paymentData) => {
+    setShowPaymentModal(false);
+    // Navigate to order details after successful payment
+    navigate(`/order/${createdOrder.orderId}`);
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentModal(false);
+    // Order is created but payment pending, navigate to order details
+    navigate(`/order/${createdOrder.orderId}`);
   };
 
   if (loading) {
@@ -142,8 +160,11 @@ function ProductDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Customer Header */}
+      <CustomerHeader />
+      
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
@@ -446,9 +467,18 @@ function ProductDetail() {
                   {orderLoading ? 'Placing Order...' : 'Place Order'}
                 </button>
               </div>
-            </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && createdOrder && (
+        <PaymentModal
+          order={createdOrder}
+          onSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
+        />
+      )}
       </div>
     </div>
   );

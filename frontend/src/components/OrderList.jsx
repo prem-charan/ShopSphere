@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAllOrders, updateOrderStatus, getOrdersByStatus } from '../services/orderAPI';
 import { FaEye, FaShippingFast, FaCheckCircle, FaTimes, FaFilter } from 'react-icons/fa';
 
 const OrderList = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -180,8 +182,16 @@ const OrderList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
+                        onClick={() => navigate(`/admin/orders/${order.orderId}`)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        title="View Details"
+                      >
+                        <FaEye className="inline mr-1" />
+                        View
+                      </button>
+                      <button
                         onClick={() => openUpdateModal(order)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
+                        className="text-blue-600 hover:text-blue-900"
                         title="Update Status"
                       >
                         <FaShippingFast className="inline mr-1" />

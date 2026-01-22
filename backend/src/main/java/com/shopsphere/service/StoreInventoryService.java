@@ -41,6 +41,10 @@ public class StoreInventoryService {
         inventory.setIsAvailable(dto.getIsAvailable() != null ? dto.getIsAvailable() : true);
 
         StoreProductInventory saved = inventoryRepository.save(inventory);
+        
+        // Sync product total stock quantity with sum of all store inventories
+        syncProductTotalStock(dto.getProductId());
+        
         return convertToDTO(saved, product.getName());
     }
 
@@ -105,6 +109,9 @@ public class StoreInventoryService {
 
         inventory.setStockQuantity(quantity);
         inventoryRepository.save(inventory);
+        
+        // Sync product total stock quantity with sum of all store inventories
+        syncProductTotalStock(productId);
     }
 
     @Transactional
@@ -121,6 +128,9 @@ public class StoreInventoryService {
 
         inventory.decreaseStock(quantity);
         inventoryRepository.save(inventory);
+        
+        // Sync product total stock quantity with sum of all store inventories
+        syncProductTotalStock(productId);
     }
 
     @Transactional
@@ -133,6 +143,9 @@ public class StoreInventoryService {
 
         inventory.increaseStock(quantity);
         inventoryRepository.save(inventory);
+        
+        // Sync product total stock quantity with sum of all store inventories
+        syncProductTotalStock(productId);
     }
 
     @Transactional(readOnly = true)
@@ -156,10 +169,39 @@ public class StoreInventoryService {
     @Transactional
     public void deleteInventory(Long inventoryId) {
         log.info("Deleting inventory: {}", inventoryId);
-        if (!inventoryRepository.existsById(inventoryId)) {
-            throw new ResourceNotFoundException("Inventory not found with id: " + inventoryId);
-        }
+        StoreProductInventory inventory = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+        
+        Long productId = inventory.getProductId();
         inventoryRepository.deleteById(inventoryId);
+        
+        // Sync product total stock quantity after deletion
+        syncProductTotalStock(productId);
+    }
+
+    /**
+     * Synchronizes the Product's total stock quantity with the sum of all store inventories.
+     * This ensures Product.stockQuantity always reflects the total across all stores.
+     */
+    @Transactional
+    protected void syncProductTotalStock(Long productId) {
+        log.info("Syncing total stock for product: {}", productId);
+        
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+        
+        // Calculate total stock across all stores
+        List<StoreProductInventory> allStoreInventories = inventoryRepository.findByProductId(productId);
+        int totalStock = allStoreInventories.stream()
+                .mapToInt(StoreProductInventory::getStockQuantity)
+                .sum();
+        
+        // Update product's total stock quantity
+        product.setStockQuantity(totalStock);
+        productRepository.save(product);
+        
+        log.info("Product {} total stock updated to {} (across {} stores)", 
+                productId, totalStock, allStoreInventories.size());
     }
 
     private StoreInventoryDTO convertToDTO(StoreProductInventory inventory, String productName) {

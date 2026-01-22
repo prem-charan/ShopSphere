@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOrdersByCustomer } from '../services/orderAPI';
 import { useAuth } from '../context/AuthContext';
+import CustomerHeader from './CustomerHeader';
 import { FaShoppingBag, FaTruck, FaCheckCircle, FaTimes, FaEye } from 'react-icons/fa';
 
 const MyOrders = () => {
@@ -77,15 +78,20 @@ const MyOrders = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl text-gray-600">Loading your orders...</div>
+      <div>
+        <CustomerHeader />
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-xl text-gray-600">Loading your orders...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">My Orders</h1>
+    <div className="min-h-screen bg-gray-50">
+      <CustomerHeader />
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">My Orders</h1>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -187,6 +193,7 @@ const MyOrders = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };
