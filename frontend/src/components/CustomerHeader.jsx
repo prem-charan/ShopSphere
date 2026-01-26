@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome, FaGift } from 'react-icons/fa';
 
 const CustomerHeader = () => {
   const navigate = useNavigate();
@@ -35,6 +35,14 @@ const CustomerHeader = () => {
                 >
                   <FaHome />
                   <span>Home</span>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/loyalty')}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                >
+                  <FaGift />
+                  <span>Rewards</span>
                 </button>
                 
                 <button

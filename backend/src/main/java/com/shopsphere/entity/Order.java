@@ -32,7 +32,7 @@ public class Order {
 
     @NotNull(message = "Order status is required")
     @Column(nullable = false, length = 20)
-    private String status; // PLACED, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+    private String status; // CONFIRMED, SHIPPED, DELIVERED, CANCELLED
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal totalAmount;
@@ -66,7 +66,7 @@ public class Order {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) {
-            status = "PLACED";
+            status = "CONFIRMED";
         }
         if (paymentStatus == null) {
             paymentStatus = "PENDING";

@@ -9,6 +9,7 @@ import ProductDetail from './pages/ProductDetail';
 import AdminDashboard from './pages/AdminDashboard';
 import MyOrders from './components/MyOrders';
 import OrderDetail from './components/OrderDetail';
+import LoyaltyPage from './pages/LoyaltyPage';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/loyalty"
+            element={
+              <ProtectedRoute>
+                <LoyaltyPage />
               </ProtectedRoute>
             }
           />

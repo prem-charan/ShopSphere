@@ -29,6 +29,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final StoreProductInventoryRepository storeInventoryRepository;
+    private final LoyaltyService loyaltyService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -120,6 +121,15 @@ public class OrderService {
         // Save order
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully with ID: {}", savedOrder.getOrderId());
+
+        // Award loyalty points immediately on order confirmation
+        try {
+            loyaltyService.earnPointsFromOrder(savedOrder.getCustomerId(), savedOrder.getOrderId(), savedOrder.getTotalAmount());
+            log.info("Loyalty points awarded for order: {}", savedOrder.getOrderId());
+        } catch (Exception e) {
+            log.error("Failed to award loyalty points for order {}: {}", savedOrder.getOrderId(), e.getMessage());
+            // Don't fail the order creation if loyalty points fail
+        }
 
         return convertToOrderResponse(savedOrder);
     }
@@ -264,10 +274,10 @@ public class OrderService {
 
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
         // Define valid status transitions
+        // Flow: CONFIRMED → SHIPPED → DELIVERED or CANCELLED
         return switch (currentStatus) {
-            case "PLACED" -> List.of("CONFIRMED", "CANCELLED").contains(newStatus);
             case "CONFIRMED" -> List.of("SHIPPED", "CANCELLED").contains(newStatus);
-            case "SHIPPED" -> List.of("DELIVERED").contains(newStatus);
+            case "SHIPPED" -> List.of("DELIVERED", "CANCELLED").contains(newStatus);
             case "DELIVERED", "CANCELLED" -> false; // Terminal states
             default -> false;
         };

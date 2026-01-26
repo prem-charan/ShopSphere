@@ -39,10 +39,8 @@ const MyOrders = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'PLACED':
-        return <FaShoppingBag className="text-blue-600" />;
       case 'CONFIRMED':
-        return <FaShoppingBag className="text-yellow-600" />;
+        return <FaShoppingBag className="text-blue-600" />;
       case 'SHIPPED':
         return <FaTruck className="text-purple-600" />;
       case 'DELIVERED':
@@ -56,8 +54,7 @@ const MyOrders = () => {
 
   const getStatusBadgeClass = (status) => {
     const statusClasses = {
-      PLACED: 'bg-blue-100 text-blue-800',
-      CONFIRMED: 'bg-yellow-100 text-yellow-800',
+      CONFIRMED: 'bg-blue-100 text-blue-800',
       SHIPPED: 'bg-purple-100 text-purple-800',
       DELIVERED: 'bg-green-100 text-green-800',
       CANCELLED: 'bg-red-100 text-red-800',
@@ -67,7 +64,6 @@ const MyOrders = () => {
 
   const getStatusDescription = (status) => {
     const descriptions = {
-      PLACED: 'Your order has been placed and is being processed.',
       CONFIRMED: 'Your order has been confirmed and will be shipped soon.',
       SHIPPED: 'Your order is on its way!',
       DELIVERED: 'Your order has been delivered.',
@@ -100,7 +96,7 @@ const MyOrders = () => {
       )}
 
       <div className="mb-6 flex gap-2 overflow-x-auto">
-        {['ALL', 'PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
+        {['ALL', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}

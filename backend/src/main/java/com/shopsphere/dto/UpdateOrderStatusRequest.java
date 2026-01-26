@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class UpdateOrderStatusRequest {
 
     @NotBlank(message = "Status is required")
-    private String status; // PLACED, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+    private String status; // CONFIRMED, SHIPPED, DELIVERED, CANCELLED
 
     private String trackingNumber; // Optional, for SHIPPED status
 

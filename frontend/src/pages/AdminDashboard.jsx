@@ -7,6 +7,9 @@ import Dashboard from '../components/Dashboard';
 import OrderList from '../components/OrderList';
 import OrderDetail from '../components/OrderDetail';
 import StoreInventoryManagement from '../components/StoreInventoryManagement';
+import LoyaltyOverview from '../components/LoyaltyOverview';
+import CustomerLoyaltyDetail from '../components/CustomerLoyaltyDetail';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 import { FaSignOutAlt, FaHome } from 'react-icons/fa';
 
 function AdminDashboard() {
@@ -108,6 +111,26 @@ function AdminDashboard() {
             >
               Low Stock Alerts
             </Link>
+            <Link
+              to="/admin/loyalty"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/loyalty') || location.pathname.startsWith('/admin/loyalty/')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
+            >
+              Loyalty Program
+            </Link>
+            <Link
+              to="/admin/analytics"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/analytics')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
+            >
+              Analytics
+            </Link>
           </div>
         </div>
       </nav>
@@ -123,6 +146,9 @@ function AdminDashboard() {
             <Route path="/orders/:orderId" element={<OrderDetail />} />
             <Route path="/store-inventory" element={<StoreInventoryManagement />} />
             <Route path="/low-stock" element={<LowStockAlert />} />
+            <Route path="/loyalty" element={<LoyaltyOverview />} />
+            <Route path="/loyalty/:userId" element={<CustomerLoyaltyDetail />} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
           </Routes>
         </div>
       </main>
