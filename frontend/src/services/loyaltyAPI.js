@@ -41,6 +41,8 @@ export const loyaltyAPI = {
   
   redeemReward: (redeemData) => api.post('/loyalty/redeem', redeemData),
   
+  validateDiscountCode: (code) => api.get(`/loyalty/validate-code/${code}`),
+  
   // Admin endpoints
   getAllAccounts: () => api.get('/loyalty/admin/all'),
   

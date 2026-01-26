@@ -37,6 +37,12 @@ public class Order {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 
+    @Column(length = 50)
+    private String discountCode; // Loyalty reward code applied
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal discountAmount; // Discount amount in rupees
+
     @Column(length = 500)
     private String shippingAddress;
 

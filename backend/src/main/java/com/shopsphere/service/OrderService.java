@@ -59,8 +59,12 @@ public class OrderService {
         order.setShippingAddress(request.getShippingAddress());
         order.setStoreLocation(request.getStoreLocation());
         order.setNotes(request.getNotes());
-        order.setStatus("PLACED");
+        order.setStatus("CONFIRMED");
         order.setPaymentStatus("PENDING");
+
+        log.info("=== DISCOUNT INFO RECEIVED ===");
+        log.info("Discount Code: {}", request.getDiscountCode());
+        log.info("Discount Amount: {}", request.getDiscountAmount());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -116,11 +120,42 @@ public class OrderService {
             productRepository.save(product);
         }
 
+        // Apply discount if provided
+        if (request.getDiscountCode() != null && request.getDiscountAmount() != null && request.getDiscountAmount() > 0) {
+            log.info("=== APPLYING DISCOUNT ===");
+            log.info("Subtotal before discount: {}", totalAmount);
+            log.info("Discount code: {}", request.getDiscountCode());
+            log.info("Discount amount from request: {}", request.getDiscountAmount());
+            
+            order.setDiscountCode(request.getDiscountCode());
+            order.setDiscountAmount(BigDecimal.valueOf(request.getDiscountAmount()));
+            
+            // Subtract discount from total
+            BigDecimal discountAmount = BigDecimal.valueOf(request.getDiscountAmount());
+            totalAmount = totalAmount.subtract(discountAmount);
+            
+            log.info("Total after discount: {}", totalAmount);
+            
+            // Ensure total doesn't go negative
+            if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                totalAmount = BigDecimal.ZERO;
+            }
+            
+            log.info("Final total (after negative check): {}", totalAmount);
+        } else {
+            log.info("No discount applied - discountCode: {}, discountAmount: {}", 
+                request.getDiscountCode(), request.getDiscountAmount());
+        }
+
         order.setTotalAmount(totalAmount);
 
         // Save order
         Order savedOrder = orderRepository.save(order);
-        log.info("Order created successfully with ID: {}", savedOrder.getOrderId());
+        log.info("=== ORDER SAVED ===");
+        log.info("Order ID: {}", savedOrder.getOrderId());
+        log.info("Order totalAmount: {}", savedOrder.getTotalAmount());
+        log.info("Order discountCode: {}", savedOrder.getDiscountCode());
+        log.info("Order discountAmount: {}", savedOrder.getDiscountAmount());
 
         // Award loyalty points immediately on order confirmation
         try {
@@ -191,9 +226,18 @@ public class OrderService {
 
         order.setStatus(newStatus);
 
-        // Update tracking number if provided and status is SHIPPED
-        if (newStatus.equals("SHIPPED") && request.getTrackingNumber() != null) {
-            order.setTrackingNumber(request.getTrackingNumber());
+        // Generate or update tracking number when status is SHIPPED
+        if (newStatus.equals("SHIPPED")) {
+            if (request.getTrackingNumber() != null && !request.getTrackingNumber().isBlank()) {
+                // Use provided tracking number
+                order.setTrackingNumber(request.getTrackingNumber());
+                log.info("Using provided tracking number: {}", request.getTrackingNumber());
+            } else if (order.getTrackingNumber() == null || order.getTrackingNumber().isBlank()) {
+                // Auto-generate tracking number if not already set
+                String trackingNumber = generateTrackingNumber(order);
+                order.setTrackingNumber(trackingNumber);
+                log.info("Auto-generated tracking number: {}", trackingNumber);
+            }
         }
 
         // Update notes if provided
@@ -272,6 +316,17 @@ public class OrderService {
         }
     }
 
+    /**
+     * Generate a unique tracking number for an order
+     * Format: TRACK-{ORDER_TYPE}-{ORDER_ID}-{TIMESTAMP}
+     * Example: TRACK-ONLINE-123-1234567890
+     */
+    private String generateTrackingNumber(Order order) {
+        String orderType = order.getOrderType().substring(0, Math.min(3, order.getOrderType().length())).toUpperCase();
+        long timestamp = System.currentTimeMillis() / 1000; // Unix timestamp in seconds
+        return String.format("TRACK-%s-%d-%d", orderType, order.getOrderId(), timestamp);
+    }
+
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
         // Define valid status transitions
         // Flow: CONFIRMED → SHIPPED → DELIVERED or CANCELLED
@@ -290,6 +345,8 @@ public class OrderService {
         response.setOrderType(order.getOrderType());
         response.setStatus(order.getStatus());
         response.setTotalAmount(order.getTotalAmount());
+        response.setDiscountCode(order.getDiscountCode());
+        response.setDiscountAmount(order.getDiscountAmount());
         response.setShippingAddress(order.getShippingAddress());
         response.setStoreLocation(order.getStoreLocation());
         response.setTrackingNumber(order.getTrackingNumber());
@@ -302,6 +359,11 @@ public class OrderService {
                 .map(this::convertToOrderItemDTO)
                 .collect(Collectors.toList());
         response.setOrderItems(itemDTOs);
+
+        log.info("=== ORDER RESPONSE CREATED ===");
+        log.info("Response totalAmount: {}", response.getTotalAmount());
+        log.info("Response discountCode: {}", response.getDiscountCode());
+        log.info("Response discountAmount: {}", response.getDiscountAmount());
 
         return response;
     }

@@ -26,6 +26,13 @@ const OrderDetail = () => {
       setLoading(true);
       setError('');
       const orderResponse = await getOrderById(orderId);
+      console.log('=== OrderDetail - Fetched order ===');
+      console.log('Full order data:', orderResponse.data);
+      console.log('Order status:', orderResponse.data.status);
+      console.log('Tracking number:', orderResponse.data.trackingNumber);
+      console.log('totalAmount:', orderResponse.data.totalAmount);
+      console.log('discountCode:', orderResponse.data.discountCode);
+      console.log('discountAmount:', orderResponse.data.discountAmount);
       setOrder(orderResponse.data);
       
       // Fetch payment history for this order
@@ -253,15 +260,49 @@ const OrderDetail = () => {
         </div>
 
         <div className="mt-6 flex justify-end">
-          <div className="w-64">
-            <div className="flex justify-between py-2 border-t border-gray-200">
+          <div className="w-80">
+            {/* Subtotal */}
+            <div className="flex justify-between items-center py-2 border-t border-gray-200">
               <span className="text-gray-600">Subtotal</span>
-              <span className="font-semibold text-gray-900">₹{order.totalAmount.toFixed(2)}</span>
+              <span className="font-semibold text-gray-900">
+                ₹{(order.discountAmount 
+                  ? (parseFloat(order.totalAmount) + parseFloat(order.discountAmount)).toFixed(2)
+                  : order.totalAmount.toFixed(2)
+                )}
+              </span>
             </div>
-            <div className="flex justify-between py-2 border-t-2 border-gray-300">
+            
+            {/* Discount */}
+            {order.discountCode && order.discountAmount && (
+              <div className="py-2 border-t border-gray-200">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-green-600">Discount Applied</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded inline-block w-fit">
+                      {order.discountCode}
+                    </span>
+                  </div>
+                  <span className="font-semibold text-green-600 whitespace-nowrap ml-4">
+                    - ₹{parseFloat(order.discountAmount).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Total */}
+            <div className="flex justify-between items-center py-3 border-t-2 border-gray-300 mt-1">
               <span className="text-lg font-bold text-gray-800">Total</span>
-              <span className="text-lg font-bold text-gray-900">₹{order.totalAmount.toFixed(2)}</span>
+              <span className="text-lg font-bold text-blue-600">₹{order.totalAmount.toFixed(2)}</span>
             </div>
+            
+            {/* Savings Message */}
+            {order.discountAmount && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700 text-center font-medium">
+                  🎉 You saved ₹{parseFloat(order.discountAmount).toFixed(2)}!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

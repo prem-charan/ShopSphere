@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +31,7 @@ public class LoyaltyService {
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final LoyaltyTransactionRepository loyaltyTransactionRepository;
     private final UserRepository userRepository;
+    private final com.shopsphere.repository.OrderRepository orderRepository;
 
     // Points calculation: ₹100 = 1 point
     private static final int POINTS_PER_HUNDRED_RUPEES = 1;
@@ -244,6 +247,123 @@ public class LoyaltyService {
                 totalMembers != null ? totalMembers : 0L,
                 totalPoints != null ? totalPoints : 0L
         );
+    }
+
+    /**
+     * Validate discount code and return discount details
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> validateDiscountCode(String code) {
+        log.info("Validating discount code: {}", code);
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        // Check if code follows pattern: REWARD-{userId}-{timestamp}
+        if (!code.startsWith("REWARD-")) {
+            log.warn("Invalid code format - doesn't start with REWARD-: {}", code);
+            result.put("valid", false);
+            result.put("message", "Invalid discount code format");
+            return result;
+        }
+
+        // Extract userId from code
+        String[] parts = code.split("-");
+        if (parts.length != 3) {
+            log.warn("Invalid code format - wrong number of parts: {}", code);
+            result.put("valid", false);
+            result.put("message", "Invalid discount code format");
+            return result;
+        }
+
+        try {
+            Long userId = Long.parseLong(parts[1]);
+            log.info("Extracted userId {} from code", userId);
+            
+            // Check if this discount code has already been used in any order
+            boolean alreadyUsed = orderRepository.existsByDiscountCode(code);
+            if (alreadyUsed) {
+                log.warn("Discount code {} has already been used in an order", code);
+                result.put("valid", false);
+                result.put("message", "This discount code has already been used");
+                return result;
+            }
+            
+            // Check if this code exists in transactions
+            List<LoyaltyTransaction> transactions = loyaltyTransactionRepository.findByUserIdAndType(userId, "REDEEMED");
+            log.info("Found {} REDEEMED transactions for user {}", transactions.size(), userId);
+            
+            // Log all transaction descriptions for debugging
+            for (LoyaltyTransaction t : transactions) {
+                log.info("Transaction description: {}", t.getDescription());
+            }
+            
+            boolean codeExists = transactions.stream()
+                    .anyMatch(t -> t.getDescription().contains(code));
+
+            if (!codeExists) {
+                log.warn("Discount code {} not found in transactions", code);
+                result.put("valid", false);
+                result.put("message", "Discount code not found or already used");
+                return result;
+            }
+
+            // Extract discount amount from code (from transaction description)
+            LoyaltyTransaction transaction = transactions.stream()
+                    .filter(t -> t.getDescription().contains(code))
+                    .findFirst()
+                    .orElse(null);
+
+            if (transaction == null) {
+                log.error("Transaction not found even though code exists");
+                result.put("valid", false);
+                result.put("message", "Discount code not found");
+                return result;
+            }
+
+            // Parse discount amount from description like "Redeemed: ₹50 Off (Code: ...)"
+            String description = transaction.getDescription();
+            log.info("Parsing discount from description: {}", description);
+            int discountAmount = 0;
+            
+            // IMPORTANT: Check larger amounts FIRST to avoid substring matching
+            // e.g., "₹150 Off" contains "50 Off" so we need to check 500, then 150, then 50
+            if (description.contains("₹500 Off") || description.contains("500 Off")) {
+                discountAmount = 500;
+                log.info("Matched ₹500 Off discount");
+            } else if (description.contains("₹150 Off") || description.contains("150 Off")) {
+                discountAmount = 150;
+                log.info("Matched ₹150 Off discount");
+            } else if (description.contains("₹50 Off") || description.contains("50 Off")) {
+                discountAmount = 50;
+                log.info("Matched ₹50 Off discount");
+            }
+
+            if (discountAmount == 0) {
+                log.warn("Could not parse discount amount from description: {}", description);
+                result.put("valid", false);
+                result.put("message", "Invalid discount code");
+                return result;
+            }
+
+            result.put("valid", true);
+            result.put("discountAmount", discountAmount);
+            result.put("message", "Discount code is valid");
+            result.put("code", code);
+            
+            log.info("Discount code validated successfully: {} - ₹{} off", code, discountAmount);
+            return result;
+            
+        } catch (NumberFormatException e) {
+            log.error("Error parsing user ID from discount code: {}", code, e);
+            result.put("valid", false);
+            result.put("message", "Invalid discount code format");
+            return result;
+        } catch (Exception e) {
+            log.error("Unexpected error validating discount code: {}", code, e);
+            result.put("valid", false);
+            result.put("message", "Error validating discount code");
+            return result;
+        }
     }
 
     // Inner class for stats

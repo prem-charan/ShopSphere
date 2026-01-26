@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations } from '../services/orderAPI';
+import { loyaltyAPI } from '../services/loyaltyAPI';
 import { useAuth } from '../context/AuthContext';
 import PaymentModal from '../components/PaymentModal';
 import CustomerHeader from '../components/CustomerHeader';
-import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt, FaGift, FaCheck, FaTimes } from 'react-icons/fa';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -25,6 +26,11 @@ function ProductDetail() {
   const [orderError, setOrderError] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [pendingOrderData, setPendingOrderData] = useState(null); // Store order data before creation
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [discountValidating, setDiscountValidating] = useState(false);
+  const [discountError, setDiscountError] = useState('');
 
   useEffect(() => {
     fetchProduct();
@@ -56,6 +62,49 @@ function ProductDetail() {
     }
   };
 
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      setDiscountError('Please enter a discount code');
+      return;
+    }
+
+    try {
+      setDiscountValidating(true);
+      setDiscountError('');
+      
+      console.log('Validating discount code:', discountCode.trim());
+      const response = await loyaltyAPI.validateDiscountCode(discountCode.trim());
+      console.log('Validation response:', response.data);
+      
+      if (response.data.valid) {
+        setAppliedDiscount({
+          code: response.data.code,
+          amount: response.data.discountAmount
+        });
+        setDiscountError('');
+        console.log('Discount applied successfully:', response.data.discountAmount);
+      } else {
+        setDiscountError(response.data.message || 'Invalid discount code');
+        setAppliedDiscount(null);
+        console.log('Discount validation failed:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error validating discount code:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setDiscountError(error.response?.data?.message || 'Failed to validate discount code. Please try again.');
+      setAppliedDiscount(null);
+    } finally {
+      setDiscountValidating(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setDiscountCode('');
+    setAppliedDiscount(null);
+    setDiscountError('');
+  };
+
   const handleBuyNow = () => {
     if (!user) {
       navigate('/login');
@@ -63,9 +112,13 @@ function ProductDetail() {
     }
     setShowCheckoutModal(true);
     setOrderError('');
+    // Reset discount when opening modal
+    setDiscountCode('');
+    setAppliedDiscount(null);
+    setDiscountError('');
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = () => {
     if (!user) {
       navigate('/login');
       return;
@@ -92,47 +145,77 @@ function ProductDetail() {
       return;
     }
 
+    // Prepare order data but don't create order yet
+    const orderData = {
+      customerId: user.userId,
+      orderType: orderType,
+      orderItems: [{
+        productId: product.productId,
+        quantity: quantity,
+        unitPrice: product.price
+      }],
+      shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
+      storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
+      notes: '',
+      discountCode: appliedDiscount ? appliedDiscount.code : null,
+      discountAmount: appliedDiscount ? appliedDiscount.amount : null
+    };
+
+    console.log('=== PREPARING ORDER DATA (Not created yet) ===');
+    console.log('appliedDiscount object:', appliedDiscount);
+    console.log('orderData.discountCode:', orderData.discountCode);
+    console.log('orderData.discountAmount:', orderData.discountAmount);
+
+    // Store order data and show payment modal
+    setPendingOrderData(orderData);
+    setShowCheckoutModal(false);
+    setShowPaymentModal(true);
+  };
+
+  // Create order only after payment is initiated
+  const handleCreateOrderWithPayment = async (paymentMethod, paymentDetails) => {
     try {
       setOrderLoading(true);
       setOrderError('');
 
-      const orderData = {
-        customerId: user.userId,
-        orderType: orderType,
-        orderItems: [{
-          productId: product.productId,
-          quantity: quantity,
-          unitPrice: product.price
-        }],
-        shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
-        storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
-        notes: ''
-      };
+      console.log('=== CREATING ORDER WITH PAYMENT ===');
+      console.log('Payment method:', paymentMethod);
+      console.log('Order data:', pendingOrderData);
 
-      const response = await createOrder(orderData);
+      // Create the order
+      const orderResponse = await createOrder(pendingOrderData);
       
-      // Order created successfully, now show payment modal
-      setCreatedOrder(response.data);
-      setShowCheckoutModal(false);
-      setShowPaymentModal(true);
+      console.log('=== ORDER CREATED RESPONSE ===');
+      console.log('Full response.data:', orderResponse.data);
+      console.log('response.data.totalAmount:', orderResponse.data.totalAmount);
+      console.log('response.data.discountCode:', orderResponse.data.discountCode);
+      console.log('response.data.discountAmount:', orderResponse.data.discountAmount);
+      
+      setCreatedOrder(orderResponse.data);
+      
+      return orderResponse.data; // Return order to payment modal
     } catch (err) {
-      console.error('Error placing order:', err);
-      setOrderError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      console.error('Error creating order:', err);
+      throw err; // Re-throw to handle in payment modal
     } finally {
       setOrderLoading(false);
     }
   };
 
-  const handlePaymentSuccess = (paymentData) => {
+  const handlePaymentSuccess = (orderId) => {
     setShowPaymentModal(false);
+    setPendingOrderData(null);
     // Navigate to order details after successful payment
-    navigate(`/order/${createdOrder.orderId}`);
+    navigate(`/order/${orderId}`);
   };
 
   const handlePaymentCancel = () => {
     setShowPaymentModal(false);
-    // Order is created but payment pending, navigate to order details
-    navigate(`/order/${createdOrder.orderId}`);
+    // Clear pending order data - order was never created
+    setPendingOrderData(null);
+    setCreatedOrder(null);
+    // User can try again from checkout modal
+    setShowCheckoutModal(true);
   };
 
   if (loading) {
@@ -346,7 +429,7 @@ function ProductDetail() {
 
               {/* Order Summary */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold mb-2">Order Summary</h3>
+                <h3 className="font-semibold mb-3">Order Summary</h3>
                 <div className="flex justify-between mb-2">
                   <span>{product.name}</span>
                   <span>₹{product.price}</span>
@@ -355,10 +438,89 @@ function ProductDetail() {
                   <span>Quantity</span>
                   <span>x {quantity}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>Total</span>
+                <div className="flex justify-between mb-2 text-gray-700">
+                  <span>Subtotal</span>
                   <span>₹{(product.price * quantity).toFixed(2)}</span>
                 </div>
+
+                {/* Discount Code Input */}
+                <div className="my-4 p-3 bg-white rounded-lg border border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <FaGift className="text-purple-600" />
+                    Have a Discount Code?
+                  </label>
+                  
+                  {appliedDiscount ? (
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-300 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FaCheck className="text-green-600" />
+                        <div>
+                          <p className="font-semibold text-green-800">{appliedDiscount.code}</p>
+                          <p className="text-sm text-green-600">₹{appliedDiscount.amount} discount applied!</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleRemoveDiscount}
+                        className="text-red-500 hover:text-red-700 transition"
+                        title="Remove discount"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={discountCode}
+                          onChange={(e) => {
+                            setDiscountCode(e.target.value.toUpperCase());
+                            setDiscountError('');
+                          }}
+                          placeholder="Enter discount code"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        />
+                        <button
+                          onClick={handleApplyDiscount}
+                          disabled={discountValidating || !discountCode.trim()}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium"
+                        >
+                          {discountValidating ? 'Checking...' : 'Apply'}
+                        </button>
+                      </div>
+                      {discountError && (
+                        <p className="text-red-600 text-xs mt-2 flex items-center gap-1">
+                          <FaTimes /> {discountError}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Discount Applied */}
+                {appliedDiscount && (
+                  <div className="flex justify-between mb-2 text-green-600 font-semibold">
+                    <span>Discount</span>
+                    <span>- ₹{appliedDiscount.amount.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {/* Final Total */}
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Total</span>
+                  <span>
+                    ₹{(
+                      (product.price * quantity) - 
+                      (appliedDiscount ? appliedDiscount.amount : 0)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+                
+                {appliedDiscount && (
+                  <p className="text-xs text-green-600 mt-1 text-right">
+                    You saved ₹{appliedDiscount.amount}!
+                  </p>
+                )}
               </div>
 
               {/* Order Type Selection */}
@@ -472,9 +634,10 @@ function ProductDetail() {
       )}
 
       {/* Payment Modal */}
-      {showPaymentModal && createdOrder && (
+      {showPaymentModal && pendingOrderData && (
         <PaymentModal
-          order={createdOrder}
+          pendingOrderData={pendingOrderData}
+          onCreateOrder={handleCreateOrderWithPayment}
           onSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}
         />

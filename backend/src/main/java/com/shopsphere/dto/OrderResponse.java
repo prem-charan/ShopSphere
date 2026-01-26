@@ -18,6 +18,8 @@ public class OrderResponse {
     private String orderType;
     private String status;
     private BigDecimal totalAmount;
+    private String discountCode;
+    private BigDecimal discountAmount;
     private String shippingAddress;
     private String storeLocation;
     private String trackingNumber;

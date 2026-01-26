@@ -45,4 +45,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Get all orders ordered by creation date descending
     List<Order> findAllByOrderByCreatedAtDesc();
+
+    // Check if a discount code has been used in any order
+    boolean existsByDiscountCode(String discountCode);
 }

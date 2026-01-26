@@ -120,4 +120,24 @@ public class LoyaltyController {
             throw e;
         }
     }
+
+    /**
+     * Validate discount code
+     * Accessible by: Any authenticated user
+     */
+    @GetMapping("/validate-code/{code}")
+    @CrossOrigin(origins = "http://localhost:5173")
+    public ResponseEntity<Map<String, Object>> validateDiscountCode(@PathVariable String code) {
+        log.info("GET /api/loyalty/validate-code/{} - Validating discount code", code);
+        try {
+            Map<String, Object> result = loyaltyService.validateDiscountCode(code);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error validating discount code: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("valid", false);
+            errorResponse.put("message", "Invalid or expired discount code");
+            return ResponseEntity.ok(errorResponse);
+        }
+    }
 }

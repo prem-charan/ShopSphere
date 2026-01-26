@@ -2,15 +2,42 @@ import { useState } from 'react';
 import { initiatePayment, processPayment } from '../services/paymentAPI';
 import { FaMobile, FaMoneyBillWave, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
-const PaymentModal = ({ order, onSuccess, onCancel }) => {
+const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) => {
   const [step, setStep] = useState('method'); // method, details, otp, processing, success, failed
   const [paymentMethod, setPaymentMethod] = useState('');
   const [upiId, setUpiId] = useState('');
   const [otp, setOtp] = useState('');
   const [paymentId, setPaymentId] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
+  const [createdOrder, setCreatedOrder] = useState(null);
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Calculate total amount from pending order data
+  const calculateTotal = () => {
+    if (!pendingOrderData) return 0;
+    
+    let subtotal = 0;
+    pendingOrderData.orderItems.forEach(item => {
+      subtotal += item.unitPrice * item.quantity;
+    });
+    
+    // Apply discount if present
+    if (pendingOrderData.discountAmount) {
+      subtotal -= pendingOrderData.discountAmount;
+    }
+    
+    return Math.max(0, subtotal); // Ensure non-negative
+  };
+
+  const totalAmount = calculateTotal();
+  
+  // Debug logging
+  console.log('=== PAYMENT MODAL RECEIVED ===');
+  console.log('Pending order data:', pendingOrderData);
+  console.log('Calculated total amount:', totalAmount);
+  console.log('Discount code:', pendingOrderData?.discountCode);
+  console.log('Discount amount:', pendingOrderData?.discountAmount);
 
   const paymentMethods = [
     { id: 'UPI', name: 'UPI Payment', icon: FaMobile, color: 'purple', description: 'Pay using Google Pay, PhonePe, Paytm, etc.' },
@@ -31,8 +58,18 @@ const PaymentModal = ({ order, onSuccess, onCancel }) => {
   const handleInitiatePayment = async (method = paymentMethod) => {
     setIsProcessing(true);
     setError('');
+    setStep('processing');
 
     try {
+      console.log('=== CREATING ORDER FIRST ===');
+      // Step 1: Create the order first
+      const order = await onCreateOrder(method, { upiId: method === 'UPI' ? upiId : null });
+      setCreatedOrder(order);
+      
+      console.log('=== ORDER CREATED, NOW INITIATING PAYMENT ===');
+      console.log('Created order:', order);
+      
+      // Step 2: Initiate payment with the created order
       const paymentRequestData = {
         orderId: order.orderId,
         customerId: order.customerId,
@@ -49,14 +86,15 @@ const PaymentModal = ({ order, onSuccess, onCancel }) => {
         // COD is automatically successful
         setStep('success');
         setTimeout(() => {
-          onSuccess(response.data);
+          onSuccess(order.orderId);
         }, 2000);
       } else {
         setStep('otp');
       }
     } catch (err) {
-      console.error('Error initiating payment:', err);
-      setError(err.response?.data?.message || 'Failed to initiate payment. Please try again.');
+      console.error('Error creating order or initiating payment:', err);
+      setError(err.response?.data?.message || 'Failed to process order. Please try again.');
+      setStep('method'); // Go back to method selection
     } finally {
       setIsProcessing(false);
     }
@@ -79,7 +117,7 @@ const PaymentModal = ({ order, onSuccess, onCancel }) => {
       if (response.data.status === 'SUCCESS') {
         setStep('success');
         setTimeout(() => {
-          onSuccess(response.data);
+          onSuccess(createdOrder.orderId);
         }, 2000);
       } else {
         setStep('failed');
@@ -112,18 +150,31 @@ const PaymentModal = ({ order, onSuccess, onCancel }) => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Complete Payment</h2>
-              <p className="text-indigo-100 mt-1">Order #{order.orderId}</p>
+              {createdOrder ? (
+                <p className="text-indigo-100 mt-1">Order #{createdOrder.orderId}</p>
+              ) : (
+                <p className="text-indigo-100 mt-1">Preparing your order...</p>
+              )}
             </div>
             <button
               onClick={onCancel}
               className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition"
+              disabled={isProcessing}
             >
               <FaTimes size={24} />
             </button>
           </div>
           <div className="mt-4 bg-white bg-opacity-20 rounded-lg p-3">
             <p className="text-sm text-indigo-100">Amount to Pay</p>
-            <p className="text-3xl font-bold">₹{order.totalAmount?.toFixed(2)}</p>
+            <p className="text-3xl font-bold">₹{totalAmount.toFixed(2)}</p>
+            {pendingOrderData?.discountCode && pendingOrderData?.discountAmount && (
+              <div className="mt-2 text-xs text-green-200 flex items-center gap-2">
+                <span className="bg-green-500 bg-opacity-30 px-2 py-1 rounded">
+                  {pendingOrderData.discountCode}
+                </span>
+                <span>Saved ₹{parseFloat(pendingOrderData.discountAmount).toFixed(2)}</span>
+              </div>
+            )}
           </div>
         </div>
 

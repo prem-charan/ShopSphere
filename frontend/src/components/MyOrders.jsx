@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getOrdersByCustomer } from '../services/orderAPI';
 import { useAuth } from '../context/AuthContext';
 import CustomerHeader from './CustomerHeader';
-import { FaShoppingBag, FaTruck, FaCheckCircle, FaTimes, FaEye } from 'react-icons/fa';
+import { FaShoppingBag, FaTruck, FaCheckCircle, FaTimes, FaEye, FaTag } from 'react-icons/fa';
 
 const MyOrders = () => {
   const { user } = useAuth();
@@ -151,6 +151,11 @@ const MyOrders = () => {
                     <p className="text-2xl font-bold text-gray-800">
                       ₹{order.totalAmount.toFixed(2)}
                     </p>
+                    {order.discountAmount && (
+                      <p className="text-xs text-green-600 flex items-center justify-end gap-1">
+                        <FaTag /> Saved ₹{parseFloat(order.discountAmount).toFixed(2)}
+                      </p>
+                    )}
                     <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(order.status)}`}>
                       {order.status}
                     </span>
