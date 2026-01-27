@@ -187,7 +187,9 @@ const OrderDetail = () => {
             <FaTruck className="text-purple-600 mt-1 mr-3 text-xl" />
             <div>
               <p className="text-sm text-gray-600">Tracking Number</p>
-              <p className="font-semibold text-gray-800">{order.trackingNumber || 'Not available'}</p>
+              <p className="font-semibold text-gray-800">
+                {order.trackingNumber || (order.orderType === 'IN_STORE' ? 'N/A (In-store pickup)' : 'Not available')}
+              </p>
             </div>
           </div>
         </div>

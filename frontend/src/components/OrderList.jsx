@@ -197,6 +197,8 @@ const OrderList = () => {
                         <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
                           {order.trackingNumber}
                         </span>
+                      ) : order.orderType === 'IN_STORE' ? (
+                        <span className="text-xs text-gray-400 italic">N/A (Pickup)</span>
                       ) : (
                         <span className="text-gray-400 italic">Not yet</span>
                       )}
@@ -268,28 +270,38 @@ const OrderList = () => {
             </div>
             {updateData.status === 'SHIPPED' && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tracking Number
-                  <span className="text-xs text-gray-500 ml-2 font-normal">
-                    (Optional - Auto-generated if empty and status is SHIPPED)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={updateData.trackingNumber}
-                  onChange={(e) => setUpdateData({ ...updateData, trackingNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Leave empty for auto-generation (e.g., TRACK-ONL-XX-...)"
-                />
-                {updateData.status === 'SHIPPED' && !updateData.trackingNumber && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ Tracking number will be automatically generated
-                  </p>
-                )}
-                {updateData.trackingNumber && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    ✓ Using custom tracking number: {updateData.trackingNumber}
-                  </p>
+                {selectedOrder?.orderType === 'ONLINE' ? (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tracking Number
+                      <span className="text-xs text-gray-500 ml-2 font-normal">
+                        (Optional - Auto-generated if empty)
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={updateData.trackingNumber}
+                      onChange={(e) => setUpdateData({ ...updateData, trackingNumber: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Leave empty for auto-generation (e.g., TRACK-ONL-XX-...)"
+                    />
+                    {updateData.status === 'SHIPPED' && !updateData.trackingNumber && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ Tracking number will be automatically generated
+                      </p>
+                    )}
+                    {updateData.trackingNumber && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        ✓ Using custom tracking number: {updateData.trackingNumber}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-700">
+                      <span className="font-semibold">ℹ️ IN_STORE Order:</span> No tracking number needed - customer will pick up at store.
+                    </p>
+                  </div>
                 )}
               </div>
             )}

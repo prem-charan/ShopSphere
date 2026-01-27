@@ -257,17 +257,23 @@ public class OrderService {
 
         order.setStatus(newStatus);
 
-        // Generate or update tracking number when status is SHIPPED
+        // Generate or update tracking number when status is SHIPPED (only for ONLINE orders)
         if (newStatus.equals("SHIPPED")) {
-            if (request.getTrackingNumber() != null && !request.getTrackingNumber().isBlank()) {
-                // Use provided tracking number
-                order.setTrackingNumber(request.getTrackingNumber());
-                log.info("Using provided tracking number: {}", request.getTrackingNumber());
-            } else if (order.getTrackingNumber() == null || order.getTrackingNumber().isBlank()) {
-                // Auto-generate tracking number if not already set
-                String trackingNumber = generateTrackingNumber(order);
-                order.setTrackingNumber(trackingNumber);
-                log.info("Auto-generated tracking number: {}", trackingNumber);
+            // Tracking number is only for ONLINE orders (shipped to address)
+            // IN_STORE orders don't need tracking as customers pick up themselves
+            if ("ONLINE".equals(order.getOrderType())) {
+                if (request.getTrackingNumber() != null && !request.getTrackingNumber().isBlank()) {
+                    // Use provided tracking number
+                    order.setTrackingNumber(request.getTrackingNumber());
+                    log.info("Using provided tracking number: {}", request.getTrackingNumber());
+                } else if (order.getTrackingNumber() == null || order.getTrackingNumber().isBlank()) {
+                    // Auto-generate tracking number if not already set
+                    String trackingNumber = generateTrackingNumber(order);
+                    order.setTrackingNumber(trackingNumber);
+                    log.info("Auto-generated tracking number: {}", trackingNumber);
+                }
+            } else {
+                log.info("IN_STORE order - no tracking number needed (customer pickup)");
             }
         }
 
