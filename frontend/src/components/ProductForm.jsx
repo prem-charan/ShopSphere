@@ -9,7 +9,6 @@ function ProductForm({ product, onSubmit, onCancel }) {
     stockQuantity: '',
     description: '',
     sku: '',
-    warehouseLocation: '',
     storeLocation: '',
     imageUrl: '',
     isActive: true,
@@ -27,7 +26,6 @@ function ProductForm({ product, onSubmit, onCancel }) {
         stockQuantity: product.stockQuantity || '',
         description: product.description || '',
         sku: product.sku || '',
-        warehouseLocation: product.warehouseLocation || '',
         storeLocation: product.storeLocation || '',
         imageUrl: product.imageUrl || '',
         isActive: product.isActive !== undefined ? product.isActive : true,
@@ -184,28 +182,18 @@ function ProductForm({ product, onSubmit, onCancel }) {
               />
             </div>
 
-            {/* Warehouse Location */}
+            {/* Store Location - Use Store Inventory to manage multiple stores */}
             <div className="mb-4">
-              <label className="block mb-1.5 font-medium text-slate-800">Warehouse Location</label>
-              <input
-                type="text"
-                name="warehouseLocation"
-                value={formData.warehouseLocation}
-                onChange={handleChange}
-                placeholder="e.g., Warehouse A, Aisle 3"
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-blue-600 transition-colors"
-              />
-            </div>
-
-            {/* Store Location */}
-            <div className="mb-4">
-              <label className="block mb-1.5 font-medium text-slate-800">Store Location</label>
+              <label className="block mb-1.5 font-medium text-slate-800">
+                Initial Store Location
+                <span className="text-xs text-gray-500 ml-2 font-normal">(Use Store Inventory for multiple stores)</span>
+              </label>
               <input
                 type="text"
                 name="storeLocation"
                 value={formData.storeLocation}
                 onChange={handleChange}
-                placeholder="e.g., Main Store, Section B"
+                placeholder="e.g., Main Store, Mumbai Store"
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-blue-600 transition-colors"
               />
             </div>

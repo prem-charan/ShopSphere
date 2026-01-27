@@ -183,7 +183,7 @@ function ProductList() {
                   <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Category</th>
                   <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Price</th>
                   <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Stock</th>
-                  <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Location</th>
+                  <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Store</th>
                   <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Status</th>
                   <th className="p-3 text-left bg-slate-50 font-semibold text-slate-800 border-b border-slate-200">Actions</th>
                 </tr>
@@ -214,9 +214,7 @@ function ProductList() {
                       </span>
                     </td>
                     <td className="p-3 border-b border-slate-200 text-sm leading-tight">
-                      {product.warehouseLocation && <div>WH: {product.warehouseLocation}</div>}
-                      {product.storeLocation && <div>Store: {product.storeLocation}</div>}
-                      {!product.warehouseLocation && !product.storeLocation && '-'}
+                      {product.storeLocation ? product.storeLocation : '-'}
                     </td>
                     <td className="p-3 border-b border-slate-200">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${

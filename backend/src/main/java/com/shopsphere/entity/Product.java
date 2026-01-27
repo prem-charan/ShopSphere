@@ -45,9 +45,6 @@ public class Product {
     @Column(name = "sku", unique = true, length = 50)
     private String sku;
 
-    @Column(name = "warehouse_location", length = 100)
-    private String warehouseLocation;
-
     @Column(name = "store_location", length = 100)
     private String storeLocation;
 

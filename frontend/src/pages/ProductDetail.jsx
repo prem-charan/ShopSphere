@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
-import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations } from '../services/orderAPI';
+import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations, getInventoryByProduct } from '../services/orderAPI';
 import { loyaltyAPI } from '../services/loyaltyAPI';
 import { useAuth } from '../context/AuthContext';
 import PaymentModal from '../components/PaymentModal';
 import CustomerHeader from '../components/CustomerHeader';
-import { FaArrowLeft, FaBox, FaWarehouse, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt, FaGift, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaBox, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt, FaGift, FaCheck, FaTimes } from 'react-icons/fa';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -42,9 +42,10 @@ function ProductDetail() {
       setLoading(true);
       const response = await productAPI.getProductById(id);
       setProduct(response.data.data);
-      // Fetch stores where this product is available
-      const storesResponse = await getStoresWithProduct(id);
-      setAvailableStores(storesResponse.data || []);
+      // Fetch stores where this product is available WITH quantities
+      const inventoryResponse = await getInventoryByProduct(id);
+      setAvailableStores(inventoryResponse.data || []);
+      console.log('Product inventory:', inventoryResponse.data);
     } catch (err) {
       setError('Failed to load product details');
       console.error('Error:', err);
@@ -305,18 +306,6 @@ function ProductDetail() {
                     <span><strong>SKU:</strong> {product.sku}</span>
                   </div>
                 )}
-                {product.warehouseLocation && (
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <FaWarehouse className="text-blue-600" />
-                    <span><strong>Warehouse:</strong> {product.warehouseLocation}</span>
-                  </div>
-                )}
-                {product.storeLocation && (
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <FaStore className="text-blue-600" />
-                    <span><strong>Store:</strong> {product.storeLocation}</span>
-                  </div>
-                )}
               </div>
 
               {/* Description */}
@@ -362,27 +351,40 @@ function ProductDetail() {
               {/* Store Availability */}
               {availableStores.length > 0 && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h3 className="font-semibold text-green-800 mb-2">Available at stores:</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {availableStores.map((store, index) => (
-                      <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                        {store}
-                      </span>
+                  <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                    <FaStore /> Available at Stores:
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availableStores.map((inventory, index) => (
+                      <div key={index} className="flex justify-between items-center px-4 py-2 bg-white border border-green-300 rounded-lg">
+                        <span className="font-medium text-green-800">{inventory.storeLocation}</span>
+                        <span className="text-sm bg-green-100 px-3 py-1 rounded-full font-semibold text-green-700">
+                          {inventory.stockQuantity}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="space-y-3 mt-auto">
-                <button
-                  onClick={handleBuyNow}
-                  disabled={product.stockQuantity === 0}
-                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
-                </button>
-              </div>
+              {/* Action Buttons - Only show for customers */}
+              {user?.role !== 'ADMIN' ? (
+                <div className="space-y-3 mt-auto">
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={product.stockQuantity === 0}
+                    className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-auto p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <p className="text-sm text-indigo-700 text-center font-medium">
+                    Admin View - Orders cannot be placed from admin account
+                  </p>
+                </div>
+              )}
 
               {/* Stock Warning */}
               {product.isLowStock && (
@@ -588,9 +590,9 @@ function ProductDetail() {
                   >
                     <option value="">Choose a store</option>
                     {availableStores.length > 0 ? (
-                      availableStores.map((store, index) => (
-                        <option key={index} value={store}>
-                          {store} (Available)
+                      availableStores.map((inventory, index) => (
+                        <option key={index} value={inventory.storeLocation}>
+                          {inventory.storeLocation} ({inventory.stockQuantity})
                         </option>
                       ))
                     ) : (

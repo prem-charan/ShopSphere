@@ -80,6 +80,21 @@ const OrderDetail = () => {
     return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getOrderTitle = (order) => {
+    if (!order.orderItems || order.orderItems.length === 0) {
+      return `Order #${order.orderId}`;
+    }
+    
+    const firstItem = order.orderItems[0].productName;
+    const remainingCount = order.orderItems.length - 1;
+    
+    if (remainingCount === 0) {
+      return `Order #${order.orderId} - ${firstItem}`;
+    } else {
+      return `Order #${order.orderId} - ${firstItem} + ${remainingCount} more`;
+    }
+  };
+
   const getPaymentStatusIcon = (status) => {
     switch (status) {
       case 'SUCCESS':
@@ -139,7 +154,7 @@ const OrderDetail = () => {
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Order #{order.orderId}</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">{getOrderTitle(order)}</h1>
             <p className="text-gray-600">Placed on {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}</p>
           </div>
           <div className="text-right">

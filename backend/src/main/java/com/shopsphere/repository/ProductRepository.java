@@ -28,9 +28,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Find product by SKU
     Optional<Product> findBySku(String sku);
 
-    // Find products by warehouse location
-    List<Product> findByWarehouseLocation(String warehouseLocation);
-
     // Find products by store location
     List<Product> findByStoreLocation(String storeLocation);
 

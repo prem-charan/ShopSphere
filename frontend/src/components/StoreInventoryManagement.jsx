@@ -18,6 +18,7 @@ const StoreInventoryManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStock, setEditingStock] = useState({}); // Track local edits: {inventoryId: quantity}
   const [formData, setFormData] = useState({
     productId: '',
     storeLocation: '',
@@ -85,23 +86,55 @@ const StoreInventoryManagement = () => {
         isAvailable: true
       });
       
+      // Refresh both inventory and product list
       if (selectedProduct) {
-        fetchProductInventory(selectedProduct.productId);
+        await fetchProductInventory(selectedProduct.productId);
       }
+      await fetchProducts(); // ✅ Update product list to show new total stock
+      
+      console.log('Inventory added and product list refreshed');
     } catch (err) {
       console.error('Error adding inventory:', err);
       setError(err.response?.data?.message || 'Failed to add inventory');
     }
   };
 
-  const handleUpdateStock = async (productId, storeLocation, newQuantity) => {
+  const handleStockChange = (inventoryId, newValue) => {
+    // Update local state only (no API call yet)
+    setEditingStock({ ...editingStock, [inventoryId]: newValue });
+  };
+
+  const handleStockBlur = async (inventory) => {
+    const newQuantity = editingStock[inventory.inventoryId];
+    
+    // If no local edit or same as original, do nothing
+    if (newQuantity === undefined || newQuantity === inventory.stockQuantity) {
+      return;
+    }
+
     try {
       setError('');
-      await updateStoreStock(productId, storeLocation, newQuantity);
-      fetchProductInventory(productId);
+      await updateStoreStock(inventory.productId, inventory.storeLocation, newQuantity);
+      
+      // Clear local edit state for this inventory
+      const updatedEdits = { ...editingStock };
+      delete updatedEdits[inventory.inventoryId];
+      setEditingStock(updatedEdits);
+      
+      // Refresh both inventory and products list to show updated total stock
+      await fetchProductInventory(inventory.productId);
+      await fetchProducts(); // This updates the total stock quantity display
+      
+      console.log('Stock updated and product list refreshed');
     } catch (err) {
       console.error('Error updating stock:', err);
       setError('Failed to update stock');
+    }
+  };
+
+  const handleStockKeyPress = (e, inventory) => {
+    if (e.key === 'Enter') {
+      e.target.blur(); // Trigger blur to save
     }
   };
 
@@ -240,15 +273,13 @@ const StoreInventoryManagement = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
                               type="number"
-                              value={inventory.stockQuantity}
-                              onChange={(e) =>
-                                handleUpdateStock(
-                                  inventory.productId,
-                                  inventory.storeLocation,
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className="w-24 px-2 py-1 border border-gray-300 rounded"
+                              value={editingStock[inventory.inventoryId] !== undefined 
+                                ? editingStock[inventory.inventoryId] 
+                                : inventory.stockQuantity}
+                              onChange={(e) => handleStockChange(inventory.inventoryId, parseInt(e.target.value) || 0)}
+                              onBlur={() => handleStockBlur(inventory)}
+                              onKeyPress={(e) => handleStockKeyPress(e, inventory)}
+                              className="w-24 px-2 py-1 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                               min="0"
                             />
                           </td>

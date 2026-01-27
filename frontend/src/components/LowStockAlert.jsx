@@ -147,13 +147,6 @@ function LowStockAlert() {
                   <span className="font-semibold text-orange-500 text-lg">{product.stockQuantity}</span>
                 </div>
 
-                {product.warehouseLocation && (
-                  <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
-                    <span className="text-slate-500 text-sm">Warehouse:</span>
-                    <span className="font-semibold text-slate-800">{product.warehouseLocation}</span>
-                  </div>
-                )}
-
                 {product.storeLocation && (
                   <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
                     <span className="text-slate-500 text-sm">Store:</span>

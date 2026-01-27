@@ -29,6 +29,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final StoreProductInventoryRepository storeInventoryRepository;
+    private final StoreInventoryService storeInventoryService;
     private final LoyaltyService loyaltyService;
 
     @Transactional
@@ -104,20 +105,50 @@ public class OrderService {
 
             order.addOrderItem(orderItem);
 
-            // Update stock quantities
+            // Update stock quantities - always reduce from store inventory
             if (request.getOrderType().equalsIgnoreCase("IN_STORE")) {
-                // Decrease store-specific inventory
-                storeInventoryRepository.findByProductIdAndStoreLocation(
-                        product.getProductId(), request.getStoreLocation())
-                        .ifPresent(inventory -> {
-                            inventory.decreaseStock(itemDTO.getQuantity());
-                            storeInventoryRepository.save(inventory);
-                        });
+                // Decrease store-specific inventory for in-store orders
+                log.info("Processing IN_STORE order - reducing stock from store: {}", request.getStoreLocation());
+                storeInventoryService.decreaseStock(product.getProductId(), request.getStoreLocation(), itemDTO.getQuantity());
+            } else {
+                // For ONLINE orders, find first store with sufficient stock and reduce from there
+                log.info("Processing ONLINE order - finding store with sufficient stock for product {}", product.getProductId());
+                List<com.shopsphere.entity.StoreProductInventory> storeInventories = 
+                        storeInventoryRepository.findByProductId(product.getProductId());
+                
+                boolean stockReduced = false;
+                for (com.shopsphere.entity.StoreProductInventory inventory : storeInventories) {
+                    if (inventory.hasStock(itemDTO.getQuantity())) {
+                        log.info("Reducing {} units from store: {}", itemDTO.getQuantity(), inventory.getStoreLocation());
+                        storeInventoryService.decreaseStock(product.getProductId(), inventory.getStoreLocation(), itemDTO.getQuantity());
+                        stockReduced = true;
+                        break;
+                    }
+                }
+                
+                if (!stockReduced) {
+                    log.warn("No single store has sufficient stock - attempting to fulfill from multiple stores");
+                    // Try to fulfill from multiple stores if no single store has enough
+                    int remainingQuantity = itemDTO.getQuantity();
+                    for (com.shopsphere.entity.StoreProductInventory inventory : storeInventories) {
+                        if (remainingQuantity <= 0) break;
+                        
+                        int availableAtStore = inventory.getStockQuantity();
+                        if (availableAtStore > 0) {
+                            int toReduce = Math.min(availableAtStore, remainingQuantity);
+                            log.info("Reducing {} units from store: {}", toReduce, inventory.getStoreLocation());
+                            storeInventoryService.decreaseStock(product.getProductId(), inventory.getStoreLocation(), toReduce);
+                            remainingQuantity -= toReduce;
+                        }
+                    }
+                    
+                    if (remainingQuantity > 0) {
+                        throw new IllegalArgumentException("Insufficient stock across all stores for product: " + product.getName());
+                    }
+                }
             }
             
-            // Also decrease general product stock
-            product.setStockQuantity(product.getStockQuantity() - itemDTO.getQuantity());
-            productRepository.save(product);
+            // Note: Product total stock is automatically synced by StoreInventoryService.decreaseStock()
         }
 
         // Apply discount if provided

@@ -72,6 +72,21 @@ const MyOrders = () => {
     return descriptions[status] || 'Order status unknown';
   };
 
+  const getOrderTitle = (order) => {
+    if (!order.orderItems || order.orderItems.length === 0) {
+      return `Order #${order.orderId}`;
+    }
+    
+    const firstItem = order.orderItems[0].productName;
+    const remainingCount = order.orderItems.length - 1;
+    
+    if (remainingCount === 0) {
+      return `Order #${order.orderId} - ${firstItem}`;
+    } else {
+      return `Order #${order.orderId} - ${firstItem} + ${remainingCount} more`;
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -139,7 +154,7 @@ const MyOrders = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800">
-                        Order #{order.orderId}
+                        {getOrderTitle(order)}
                       </h3>
                       <p className="text-sm text-gray-500">
                         {new Date(order.createdAt).toLocaleDateString()} at{' '}

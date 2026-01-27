@@ -34,8 +34,6 @@ public class ProductDTO {
     
     private String sku;
     
-    private String warehouseLocation;
-    
     private String storeLocation;
     
     private String imageUrl;

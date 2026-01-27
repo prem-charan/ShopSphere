@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final StoreInventoryService storeInventoryService;
 
     @Value("${shopsphere.inventory.low-stock-threshold:10}")
     private int lowStockThreshold;
@@ -33,7 +34,6 @@ public class ProductService {
         dto.setStockQuantity(product.getStockQuantity());
         dto.setDescription(product.getDescription());
         dto.setSku(product.getSku());
-        dto.setWarehouseLocation(product.getWarehouseLocation());
         dto.setStoreLocation(product.getStoreLocation());
         dto.setImageUrl(product.getImageUrl());
         dto.setIsActive(product.getIsActive());
@@ -53,7 +53,6 @@ public class ProductService {
         product.setStockQuantity(dto.getStockQuantity());
         product.setDescription(dto.getDescription());
         product.setSku(dto.getSku());
-        product.setWarehouseLocation(dto.getWarehouseLocation());
         product.setStoreLocation(dto.getStoreLocation());
         product.setImageUrl(dto.getImageUrl());
         product.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
@@ -86,6 +85,23 @@ public class ProductService {
         Product product = convertToEntity(productDTO);
         Product savedProduct = productRepository.save(product);
         log.info("Product created successfully with ID: {}", savedProduct.getProductId());
+        
+        // If initial store location is provided, create store inventory entry
+        if (productDTO.getStoreLocation() != null && !productDTO.getStoreLocation().trim().isEmpty() 
+                && productDTO.getStockQuantity() != null && productDTO.getStockQuantity() > 0) {
+            log.info("Creating initial store inventory for product {} at store {}", 
+                    savedProduct.getProductId(), productDTO.getStoreLocation());
+            
+            com.shopsphere.dto.StoreInventoryDTO inventoryDTO = new com.shopsphere.dto.StoreInventoryDTO();
+            inventoryDTO.setProductId(savedProduct.getProductId());
+            inventoryDTO.setStoreLocation(productDTO.getStoreLocation());
+            inventoryDTO.setStockQuantity(productDTO.getStockQuantity());
+            inventoryDTO.setIsAvailable(true);
+            
+            storeInventoryService.addOrUpdateStoreInventory(inventoryDTO);
+            log.info("Initial store inventory created successfully");
+        }
+        
         return convertToDTO(savedProduct);
     }
 
@@ -102,7 +118,6 @@ public class ProductService {
         existingProduct.setStockQuantity(productDTO.getStockQuantity());
         existingProduct.setDescription(productDTO.getDescription());
         existingProduct.setSku(productDTO.getSku());
-        existingProduct.setWarehouseLocation(productDTO.getWarehouseLocation());
         existingProduct.setStoreLocation(productDTO.getStoreLocation());
         existingProduct.setImageUrl(productDTO.getImageUrl());
         if (productDTO.getIsActive() != null) {

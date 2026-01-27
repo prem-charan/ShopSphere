@@ -40,12 +40,6 @@ function AdminDashboard() {
               <p className="text-indigo-200 text-sm">Logged in as {user?.name}</p>
             </div>
             <div className="flex items-center gap-4">
-              <Link
-                to="/"
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors no-underline text-white"
-              >
-                <FaHome /> Customer View
-              </Link>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
