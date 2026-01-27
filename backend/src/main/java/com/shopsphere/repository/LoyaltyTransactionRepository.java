@@ -27,6 +27,11 @@ public interface LoyaltyTransactionRepository extends JpaRepository<LoyaltyTrans
     List<LoyaltyTransaction> findByUserIdAndType(Long userId, String type);
 
     /**
+     * Find all transactions by type
+     */
+    List<LoyaltyTransaction> findByType(String type);
+
+    /**
      * Check if points were already awarded for an order
      */
     boolean existsByOrderId(Long orderId);

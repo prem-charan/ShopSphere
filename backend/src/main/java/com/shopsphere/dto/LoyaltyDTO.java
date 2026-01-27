@@ -32,6 +32,19 @@ public class LoyaltyDTO {
         private String type;
         private String description;
         private LocalDateTime createdAt;
+        private String displayType; // "EARNED", "REDEEMED", or "ACTIVE" for unused coupons
+        
+        // Constructor without displayType for backwards compatibility
+        public TransactionDTO(Long transactionId, Long orderId, Integer points, 
+                            String type, String description, LocalDateTime createdAt) {
+            this.transactionId = transactionId;
+            this.orderId = orderId;
+            this.points = points;
+            this.type = type;
+            this.description = description;
+            this.createdAt = createdAt;
+            this.displayType = type; // Default to type
+        }
     }
 
     // Constructor without transactions (for list views)

@@ -43,6 +43,8 @@ export const loyaltyAPI = {
   
   validateDiscountCode: (code) => api.get(`/loyalty/validate-code/${code}`),
   
+  getActiveCoupon: (userId) => api.get(`/loyalty/active-coupon/${userId}`),
+  
   // Admin endpoints
   getAllAccounts: () => api.get('/loyalty/admin/all'),
   

@@ -130,12 +130,14 @@ const CustomerLoyaltyDetail = () => {
                     <td className="py-3 px-4">
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          transaction.type === 'EARNED'
+                          transaction.displayType === 'EARNED'
                             ? 'bg-green-100 text-green-800'
+                            : transaction.displayType === 'ACTIVE'
+                            ? 'bg-blue-100 text-blue-800'
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {transaction.type}
+                        {transaction.displayType || transaction.type}
                       </span>
                     </td>
                     <td className={`py-3 px-4 text-right font-bold text-sm ${

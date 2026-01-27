@@ -140,4 +140,26 @@ public class LoyaltyController {
             return ResponseEntity.ok(errorResponse);
         }
     }
+
+    /**
+     * Get active coupon for a user
+     * Returns the coupon code if user has an unused coupon, null otherwise
+     */
+    @GetMapping("/active-coupon/{userId}")
+    public ResponseEntity<Map<String, Object>> getActiveCoupon(@PathVariable Long userId) {
+        log.info("GET /api/loyalty/active-coupon/{} - Getting active coupon for user", userId);
+        try {
+            String activeCoupon = loyaltyService.getActiveCouponForUser(userId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("hasCoupon", activeCoupon != null);
+            response.put("couponCode", activeCoupon);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error getting active coupon: ", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("hasCoupon", false);
+            errorResponse.put("couponCode", null);
+            return ResponseEntity.ok(errorResponse);
+        }
+    }
 }

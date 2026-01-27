@@ -135,6 +135,13 @@ public class LoyaltyService {
 
         LoyaltyAccount account = getOrCreateAccount(request.getUserId());
 
+        // Check if user already has an active (unused) coupon code
+        String activeCoupon = getActiveCouponForUser(request.getUserId());
+        if (activeCoupon != null) {
+            log.warn("User {} already has an active coupon: {}", request.getUserId(), activeCoupon);
+            throw new IllegalArgumentException("You already have an active coupon code: " + activeCoupon + ". Please use it before redeeming a new one.");
+        }
+
         // Check sufficient balance
         if (!account.hasEnoughPoints(request.getPoints())) {
             throw new IllegalArgumentException("Insufficient points balance. Required: " + request.getPoints() + ", Available: " + account.getPointsBalance());
@@ -144,8 +151,8 @@ public class LoyaltyService {
         account.deductPoints(request.getPoints());
         loyaltyAccountRepository.save(account);
 
-        // Generate discount code
-        String discountCode = generateDiscountCode(request.getUserId());
+        // Generate discount code with reward amount
+        String discountCode = generateDiscountCode(request.getRewardName());
 
         // Create transaction record
         LoyaltyTransaction transaction = new LoyaltyTransaction();
@@ -215,17 +222,23 @@ public class LoyaltyService {
 
     /**
      * Generate unique discount code
+     * Format: REWARD-{AMOUNT}OFF-{timestamp}
+     * Example: REWARD-50OFF-1234567890123
      */
-    private String generateDiscountCode(Long userId) {
+    private String generateDiscountCode(String rewardName) {
         long timestamp = System.currentTimeMillis();
-        return "REWARD-" + userId + "-" + timestamp;
+        
+        // Extract amount from reward name (e.g., "₹50 Off" -> "50")
+        String amountStr = rewardName.replaceAll("[^0-9]", "");
+        
+        return "REWARD-" + amountStr + "OFF-" + timestamp;
     }
 
     /**
      * Convert transaction entity to DTO
      */
     private LoyaltyDTO.TransactionDTO convertToTransactionDTO(LoyaltyTransaction transaction) {
-        return new LoyaltyDTO.TransactionDTO(
+        LoyaltyDTO.TransactionDTO dto = new LoyaltyDTO.TransactionDTO(
                 transaction.getTransactionId(),
                 transaction.getOrderId(),
                 transaction.getPoints(),
@@ -233,6 +246,27 @@ public class LoyaltyService {
                 transaction.getDescription(),
                 transaction.getCreatedAt()
         );
+        
+        // For REDEEMED transactions, check if the coupon has been used
+        if ("REDEEMED".equals(transaction.getType())) {
+            String description = transaction.getDescription();
+            int codeStart = description.indexOf("Code: ");
+            if (codeStart != -1) {
+                String code = description.substring(codeStart + 6, description.length() - 1);
+                
+                // Check if this code has been used in an order
+                boolean isUsed = orderRepository.existsByDiscountCode(code);
+                if (isUsed) {
+                    dto.setDisplayType("REDEEMED");
+                } else {
+                    dto.setDisplayType("ACTIVE");
+                }
+            }
+        } else {
+            dto.setDisplayType(transaction.getType()); // EARNED
+        }
+        
+        return dto;
     }
 
     /**
@@ -258,7 +292,7 @@ public class LoyaltyService {
         
         Map<String, Object> result = new HashMap<>();
         
-        // Check if code follows pattern: REWARD-{userId}-{timestamp}
+        // Check if code follows pattern: REWARD-{AMOUNT}OFF-{timestamp}
         if (!code.startsWith("REWARD-")) {
             log.warn("Invalid code format - doesn't start with REWARD-: {}", code);
             result.put("valid", false);
@@ -266,7 +300,6 @@ public class LoyaltyService {
             return result;
         }
 
-        // Extract userId from code
         String[] parts = code.split("-");
         if (parts.length != 3) {
             log.warn("Invalid code format - wrong number of parts: {}", code);
@@ -276,9 +309,6 @@ public class LoyaltyService {
         }
 
         try {
-            Long userId = Long.parseLong(parts[1]);
-            log.info("Extracted userId {} from code", userId);
-            
             // Check if this discount code has already been used in any order
             boolean alreadyUsed = orderRepository.existsByDiscountCode(code);
             if (alreadyUsed) {
@@ -288,37 +318,25 @@ public class LoyaltyService {
                 return result;
             }
             
-            // Check if this code exists in transactions
-            List<LoyaltyTransaction> transactions = loyaltyTransactionRepository.findByUserIdAndType(userId, "REDEEMED");
-            log.info("Found {} REDEEMED transactions for user {}", transactions.size(), userId);
+            // Search for this code in ALL redemption transactions (across all users)
+            List<LoyaltyTransaction> allTransactions = loyaltyTransactionRepository.findByType("REDEEMED");
+            log.info("Searching for code {} in {} total REDEEMED transactions", code, allTransactions.size());
             
-            // Log all transaction descriptions for debugging
-            for (LoyaltyTransaction t : transactions) {
-                log.info("Transaction description: {}", t.getDescription());
-            }
-            
-            boolean codeExists = transactions.stream()
-                    .anyMatch(t -> t.getDescription().contains(code));
-
-            if (!codeExists) {
-                log.warn("Discount code {} not found in transactions", code);
-                result.put("valid", false);
-                result.put("message", "Discount code not found or already used");
-                return result;
-            }
-
-            // Extract discount amount from code (from transaction description)
-            LoyaltyTransaction transaction = transactions.stream()
+            // Find transaction containing this specific code
+            LoyaltyTransaction transaction = allTransactions.stream()
                     .filter(t -> t.getDescription().contains(code))
                     .findFirst()
                     .orElse(null);
 
             if (transaction == null) {
-                log.error("Transaction not found even though code exists");
+                log.warn("Discount code {} not found in any transactions", code);
                 result.put("valid", false);
-                result.put("message", "Discount code not found");
+                result.put("message", "Discount code not found or invalid");
                 return result;
             }
+            
+            log.info("Found transaction for code. User: {}, Description: {}", 
+                    transaction.getUserId(), transaction.getDescription());
 
             // Parse discount amount from description like "Redeemed: ₹50 Off (Code: ...)"
             String description = transaction.getDescription();
@@ -364,6 +382,37 @@ public class LoyaltyService {
             result.put("message", "Error validating discount code");
             return result;
         }
+    }
+
+    /**
+     * Get active (unused) coupon code for a user
+     * Returns the coupon code if one exists and hasn't been used yet, null otherwise
+     */
+    public String getActiveCouponForUser(Long userId) {
+        log.info("Checking for active coupon for user: {}", userId);
+        
+        // Get all redemption transactions for this user
+        List<LoyaltyTransaction> redemptions = loyaltyTransactionRepository.findByUserIdAndType(userId, "REDEEMED");
+        
+        // Check each redeemed code to see if it's been used in an order
+        for (LoyaltyTransaction transaction : redemptions) {
+            String description = transaction.getDescription();
+            // Extract code from description like "Redeemed: ₹50 Off (Code: REWARD-50OFF-123)"
+            int codeStart = description.indexOf("Code: ");
+            if (codeStart != -1) {
+                String code = description.substring(codeStart + 6, description.length() - 1); // Remove trailing ")"
+                
+                // Check if this code has been used in any order
+                boolean isUsed = orderRepository.existsByDiscountCode(code);
+                if (!isUsed) {
+                    log.info("Found active coupon for user {}: {}", userId, code);
+                    return code;
+                }
+            }
+        }
+        
+        log.info("No active coupon found for user: {}", userId);
+        return null;
     }
 
     // Inner class for stats
