@@ -55,9 +55,6 @@ public class Order {
     @Column(length = 20)
     private String paymentStatus; // PENDING, COMPLETED, FAILED
 
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OrderService {
 
+    // (Notes feature removed)
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final StoreProductInventoryRepository storeInventoryRepository;
@@ -59,7 +61,6 @@ public class OrderService {
         order.setOrderType(request.getOrderType().toUpperCase());
         order.setShippingAddress(request.getShippingAddress());
         order.setStoreLocation(request.getStoreLocation());
-        order.setNotes(request.getNotes());
         order.setStatus("CONFIRMED");
         order.setPaymentStatus("PENDING");
 
@@ -259,9 +260,9 @@ public class OrderService {
 
         // Generate or update tracking number when status is SHIPPED (only for ONLINE orders)
         if (newStatus.equals("SHIPPED")) {
-            // Tracking number is only for ONLINE orders (shipped to address)
-            // IN_STORE orders don't need tracking as customers pick up themselves
-            if ("ONLINE".equals(order.getOrderType())) {
+            // Tracking number is only for ONLINE orders (shipped to address).
+            // IN_STORE orders don't need tracking as customers pick up themselves.
+            if (order.isOnlineOrder()) {
                 if (request.getTrackingNumber() != null && !request.getTrackingNumber().isBlank()) {
                     // Use provided tracking number
                     order.setTrackingNumber(request.getTrackingNumber());
@@ -273,15 +274,16 @@ public class OrderService {
                     log.info("Auto-generated tracking number: {}", trackingNumber);
                 }
             } else {
+                // Ensure no tracking number is stored for in-store pickup orders
+                if (order.getTrackingNumber() != null && !order.getTrackingNumber().isBlank()) {
+                    log.info("Clearing existing tracking number for IN_STORE order (customer pickup)");
+                }
+                order.setTrackingNumber(null);
                 log.info("IN_STORE order - no tracking number needed (customer pickup)");
             }
         }
 
-        // Update notes if provided
-        if (request.getNotes() != null) {
-            String existingNotes = order.getNotes() != null ? order.getNotes() + "\n" : "";
-            order.setNotes(existingNotes + LocalDateTime.now() + ": " + request.getNotes());
-        }
+        // Notes update removed (admin notes feature disabled)
 
         // If order is cancelled, restore stock
         if (newStatus.equals("CANCELLED")) {
@@ -388,7 +390,6 @@ public class OrderService {
         response.setStoreLocation(order.getStoreLocation());
         response.setTrackingNumber(order.getTrackingNumber());
         response.setPaymentStatus(order.getPaymentStatus());
-        response.setNotes(order.getNotes());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 
@@ -417,4 +418,5 @@ public class OrderService {
         dto.setStoreLocation(item.getStoreLocation());
         return dto;
     }
+
 }

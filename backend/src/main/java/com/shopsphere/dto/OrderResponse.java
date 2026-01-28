@@ -24,7 +24,6 @@ public class OrderResponse {
     private String storeLocation;
     private String trackingNumber;
     private String paymentStatus;
-    private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemDTO> orderItems;

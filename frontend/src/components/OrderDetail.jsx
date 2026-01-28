@@ -218,12 +218,7 @@ const OrderDetail = () => {
           </div>
         )}
 
-        {order.notes && (
-          <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-sm text-gray-600 mb-1">Order Notes</p>
-            <p className="text-gray-800 whitespace-pre-line">{order.notes}</p>
-          </div>
-        )}
+        {/* Order notes feature removed */}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">

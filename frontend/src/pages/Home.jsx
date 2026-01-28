@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FaSearch, FaShoppingCart } from 'react-icons/fa';
+import { addToCart } from '../utils/cart';
 import CustomerHeader from '../components/CustomerHeader';
 
 function Home() {
@@ -53,6 +54,26 @@ function Home() {
     } else {
       navigate(`/product/${productId}`);
     }
+  };
+
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: `/product/${product.productId}` } });
+      return;
+    }
+    if (product.stockQuantity === 0) return;
+    addToCart(product.productId, 1);
+  };
+
+  const handleBuyNowFromHome = (e, product) => {
+    e.stopPropagation();
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: `/product/${product.productId}` } });
+      return;
+    }
+    if (product.stockQuantity === 0) return;
+    navigate(`/product/${product.productId}`, { state: { buyNow: true } });
   };
 
   return (
@@ -174,9 +195,22 @@ function Home() {
                       {product.stockQuantity} in stock
                     </span>
                   </div>
-                  <button className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                    View Details
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    <button
+                      onClick={(e) => handleBuyNowFromHome(e, product)}
+                      disabled={product.stockQuantity === 0}
+                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Buy Now
+                    </button>
+                    <button
+                      onClick={(e) => handleAddToCart(e, product)}
+                      disabled={product.stockQuantity === 0}
+                      className="w-full py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

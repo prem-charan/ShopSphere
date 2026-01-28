@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations, getInventoryByProduct } from '../services/orderAPI';
 import { loyaltyAPI } from '../services/loyaltyAPI';
@@ -7,10 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import PaymentModal from '../components/PaymentModal';
 import CustomerHeader from '../components/CustomerHeader';
 import { FaArrowLeft, FaBox, FaStore, FaTag, FaShoppingCart, FaMapMarkerAlt, FaGift, FaCheck, FaTimes } from 'react-icons/fa';
+import { addToCart } from '../utils/cart';
 
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,17 @@ function ProductDetail() {
     fetchProduct();
     fetchStores();
   }, [id]);
+
+  // If user clicked "Buy Now" from Home, open checkout automatically after product loads
+  useEffect(() => {
+    if (location.state?.buyNow && user && product) {
+      setShowCheckoutModal(true);
+      setOrderError('');
+      // Clear navigation state so refresh/back doesn't keep reopening
+      navigate(`/product/${id}`, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, user, product]);
 
   // Auto-fetch and apply active coupon when checkout modal opens
   useEffect(() => {
@@ -170,10 +183,19 @@ function ProductDetail() {
     // Don't reset discount - let auto-apply handle it
   };
 
-  const handlePlaceOrder = () => {
+  const handleAddToCart = () => {
     if (!user) {
       navigate('/login');
       return;
+    }
+    if (!product || product.stockQuantity === 0) return;
+    addToCart(product.productId, quantity);
+  };
+
+  const handlePlaceOrder = () => {
+    if (!user) {
+      navigate('/login');
+      return;f
     }
 
     // Validation
@@ -208,7 +230,6 @@ function ProductDetail() {
       }],
       shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
       storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
-      notes: '',
       discountCode: appliedDiscount ? appliedDiscount.code : null,
       discountAmount: appliedDiscount ? appliedDiscount.amount : null
     };
@@ -427,6 +448,13 @@ function ProductDetail() {
                     className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     {product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
+                  </button>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={product.stockQuantity === 0}
+                    className="w-full py-4 bg-gray-900 text-white rounded-xl font-semibold text-lg hover:bg-black transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    Add to Cart
                   </button>
                 </div>
               ) : (

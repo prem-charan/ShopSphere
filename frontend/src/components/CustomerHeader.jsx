@@ -1,16 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome, FaGift } from 'react-icons/fa';
+import { FaShoppingCart } from 'react-icons/fa';
+import { getCartCount } from '../utils/cart';
 
 const CustomerHeader = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+  const [cartCount, setCartCount] = useState(0);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const refresh = () => setCartCount(getCartCount());
+    refresh();
+
+    window.addEventListener('cart:updated', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('cart:updated', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -51,6 +66,19 @@ const CustomerHeader = () => {
                 >
                   <FaShoppingBag />
                   <span>My Orders</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/cart')}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition relative"
+                >
+                  <FaShoppingCart />
+                  <span>Cart</span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
                 </button>
                 
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">

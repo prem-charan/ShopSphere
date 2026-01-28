@@ -14,6 +14,4 @@ public class UpdateOrderStatusRequest {
     private String status; // CONFIRMED, SHIPPED, DELIVERED, CANCELLED
 
     private String trackingNumber; // Optional, for SHIPPED status
-
-    private String notes; // Optional additional notes
 }

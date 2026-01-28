@@ -29,8 +29,6 @@ public class CreateOrderRequest {
 
     private String storeLocation; // Required for IN_STORE orders
 
-    private String notes;
-
     private String discountCode; // Optional loyalty reward code
 
     private Double discountAmount; // Optional discount amount
