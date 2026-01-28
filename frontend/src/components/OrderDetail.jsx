@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getOrderById } from '../services/orderAPI';
 import { getPaymentsByOrder } from '../services/paymentAPI';
 import CustomerHeader from './CustomerHeader';
-import { FaArrowLeft, FaShoppingBag, FaMapMarkerAlt, FaTruck, FaCreditCard, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
+import { FaArrowLeft, FaShoppingBag, FaMapMarkerAlt, FaTruck, FaCreditCard, FaCheckCircle, FaTimesCircle, FaClock, FaFileInvoice } from 'react-icons/fa';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
@@ -143,13 +143,25 @@ const OrderDetail = () => {
     <div className="min-h-screen bg-gray-50">
       {!isAdminView && <CustomerHeader />}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-6 flex items-center text-blue-600 hover:text-blue-800"
-        >
-          <FaArrowLeft className="mr-2" />
-          Back to Orders
-        </button>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <FaArrowLeft className="mr-2" />
+            Back to Orders
+          </button>
+
+          <button
+            onClick={() =>
+              navigate(isAdminView ? `/admin/orders/${orderId}/invoice` : `/order/${orderId}/invoice`)
+            }
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition"
+          >
+            <FaFileInvoice />
+            View Invoice
+          </button>
+        </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-start mb-6">

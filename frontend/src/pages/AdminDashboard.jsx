@@ -6,6 +6,7 @@ import LowStockAlert from '../components/LowStockAlert';
 import Dashboard from '../components/Dashboard';
 import OrderList from '../components/OrderList';
 import OrderDetail from '../components/OrderDetail';
+import Invoice from '../components/Invoice';
 import StoreInventoryManagement from '../components/StoreInventoryManagement';
 import LoyaltyOverview from '../components/LoyaltyOverview';
 import CustomerLoyaltyDetail from '../components/CustomerLoyaltyDetail';
@@ -138,6 +139,7 @@ function AdminDashboard() {
             <Route path="/products" element={<ProductList />} />
             <Route path="/orders" element={<OrderList />} />
             <Route path="/orders/:orderId" element={<OrderDetail />} />
+            <Route path="/orders/:orderId/invoice" element={<Invoice />} />
             <Route path="/store-inventory" element={<StoreInventoryManagement />} />
             <Route path="/low-stock" element={<LowStockAlert />} />
             <Route path="/loyalty" element={<LoyaltyOverview />} />

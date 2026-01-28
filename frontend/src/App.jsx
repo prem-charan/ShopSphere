@@ -11,6 +11,7 @@ import MyOrders from './components/MyOrders';
 import OrderDetail from './components/OrderDetail';
 import LoyaltyPage from './pages/LoyaltyPage';
 import Cart from './pages/Cart';
+import Invoice from './components/Invoice';
 
 function App() {
   return (
@@ -44,6 +45,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/order/:orderId/invoice"
+            element={
+              <ProtectedRoute>
+                <Invoice />
               </ProtectedRoute>
             }
           />
