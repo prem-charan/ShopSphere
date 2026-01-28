@@ -13,13 +13,21 @@ export function getCart() {
   const parsed = safeParse(raw);
   if (!Array.isArray(parsed)) return [];
 
-  // Normalize shape: [{ productId: number, quantity: number }]
+  // Normalize shape: [{ productId, quantity, unitPrice?, campaignId? }]
   return parsed
     .map((i) => ({
       productId: Number(i?.productId),
       quantity: Number(i?.quantity),
+      unitPrice: i?.unitPrice != null ? Number(i.unitPrice) : null,
+      campaignId: i?.campaignId != null ? Number(i.campaignId) : null,
     }))
-    .filter((i) => Number.isFinite(i.productId) && i.productId > 0 && Number.isFinite(i.quantity) && i.quantity > 0);
+    .filter((i) => {
+      const okPid = Number.isFinite(i.productId) && i.productId > 0;
+      const okQty = Number.isFinite(i.quantity) && i.quantity > 0;
+      const okPrice = i.unitPrice == null || (Number.isFinite(i.unitPrice) && i.unitPrice >= 0);
+      const okCamp = i.campaignId == null || (Number.isFinite(i.campaignId) && i.campaignId > 0);
+      return okPid && okQty && okPrice && okCamp;
+    });
 }
 
 export function setCart(items) {
@@ -31,19 +39,32 @@ export function clearCart() {
   setCart([]);
 }
 
-export function addToCart(productId, quantity = 1) {
+export function addToCart(productId, quantity = 1, options = {}) {
   const pid = Number(productId);
   const qty = Math.max(1, Number(quantity) || 1);
+  const unitPrice = options.unitPrice != null ? Number(options.unitPrice) : null;
+  const campaignId = options.campaignId != null ? Number(options.campaignId) : null;
   const cart = getCart();
   const existing = cart.find((i) => i.productId === pid);
 
   if (existing) {
     existing.quantity += qty;
+    // Preserve any discounted unitPrice if already in cart; otherwise set if provided
+    if (existing.unitPrice == null && unitPrice != null) existing.unitPrice = unitPrice;
+    if (existing.campaignId == null && campaignId != null) existing.campaignId = campaignId;
     setCart([...cart]);
     return;
   }
 
-  setCart([...cart, { productId: pid, quantity: qty }]);
+  setCart([
+    ...cart,
+    {
+      productId: pid,
+      quantity: qty,
+      unitPrice,
+      campaignId,
+    },
+  ]);
 }
 
 export function updateCartItem(productId, quantity) {

@@ -48,4 +48,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // Check if a discount code has been used in any order
     boolean existsByDiscountCode(String discountCode);
+
+    // Campaign reporting
+    List<Order> findByCampaignId(Long campaignId);
 }

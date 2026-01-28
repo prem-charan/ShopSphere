@@ -13,7 +13,7 @@ function Cart() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [cartRows, setCartRows] = useState([]); // [{ product, quantity }]
+  const [cartRows, setCartRows] = useState([]); // [{ product, quantity, unitPrice, campaignId }]
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -34,7 +34,10 @@ function Cart() {
   const [pendingOrderData, setPendingOrderData] = useState(null);
 
   const subtotal = useMemo(() => {
-    return cartRows.reduce((sum, row) => sum + (row.product?.price || 0) * row.quantity, 0);
+    return cartRows.reduce((sum, row) => {
+      const price = row.unitPrice != null ? row.unitPrice : row.product?.price || 0;
+      return sum + price * row.quantity;
+    }, 0);
   }, [cartRows]);
 
   const total = useMemo(() => {
@@ -65,7 +68,12 @@ function Cart() {
       const products = await Promise.all(
         cart.map(async (item) => {
           const res = await productAPI.getProductById(item.productId);
-          return { product: res.data.data, quantity: item.quantity };
+          return {
+            product: res.data.data,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            campaignId: item.campaignId,
+          };
         })
       );
 
@@ -217,10 +225,11 @@ function Cart() {
       orderItems: cartRows.map((row) => ({
         productId: row.product.productId,
         quantity: row.quantity,
-        unitPrice: row.product.price,
+        unitPrice: row.unitPrice != null ? row.unitPrice : row.product.price,
       })),
       shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
       storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
+      campaignId: cartRows.find((r) => r.campaignId != null)?.campaignId || null,
       discountCode: appliedDiscount ? appliedDiscount.code : null,
       discountAmount: appliedDiscount ? appliedDiscount.amount : null,
     };
@@ -293,7 +302,14 @@ function Cart() {
                   >
                     <div className="flex-1">
                       <div className="font-semibold text-gray-800">{row.product.name}</div>
-                      <div className="text-sm text-gray-600">₹{row.product.price}</div>
+                      <div className="text-sm text-gray-600">
+                        ₹{(row.unitPrice != null ? row.unitPrice : row.product.price).toFixed(2)}
+                        {row.unitPrice != null && (
+                          <span className="ml-2 text-xs text-gray-500 line-through">
+                            ₹{Number(row.product.price).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                       {typeof row.product.stockQuantity === 'number' && (
                         <div className="text-xs text-gray-500 mt-1">Stock: {row.product.stockQuantity}</div>
                       )}
@@ -324,7 +340,7 @@ function Cart() {
                     </div>
 
                     <div className="w-36 text-right font-semibold text-gray-900">
-                      ₹{(row.product.price * row.quantity).toFixed(2)}
+                      ₹{(((row.unitPrice != null ? row.unitPrice : row.product.price) || 0) * row.quantity).toFixed(2)}
                     </div>
 
                     <button
@@ -441,7 +457,9 @@ function Cart() {
                     <div className="text-gray-700">
                       {row.product.name} <span className="text-xs text-gray-500">x {row.quantity}</span>
                     </div>
-                    <div className="font-medium">₹{(row.product.price * row.quantity).toFixed(2)}</div>
+                    <div className="font-medium">
+                      ₹{(((row.unitPrice != null ? row.unitPrice : row.product.price) || 0) * row.quantity).toFixed(2)}
+                    </div>
                   </div>
                 ))}
 

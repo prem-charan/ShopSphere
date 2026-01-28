@@ -34,6 +34,10 @@ function ProductDetail() {
   const [discountValidating, setDiscountValidating] = useState(false);
   const [discountError, setDiscountError] = useState('');
 
+  // Campaign context (optional) when user navigates from Home campaign selection
+  const campaignIdFromNav = location.state?.campaignId ?? null;
+  const campaignPriceFromNav = location.state?.campaignPrice ?? null;
+
   useEffect(() => {
     fetchProduct();
     fetchStores();
@@ -49,6 +53,11 @@ function ProductDetail() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, user, product]);
+
+  const effectiveUnitPrice =
+    campaignPriceFromNav != null ? Number(campaignPriceFromNav) : Number(product?.price ?? 0);
+
+  const isCampaignPrice = campaignPriceFromNav != null;
 
   // Auto-fetch and apply active coupon when checkout modal opens
   useEffect(() => {
@@ -189,7 +198,10 @@ function ProductDetail() {
       return;
     }
     if (!product || product.stockQuantity === 0) return;
-    addToCart(product.productId, quantity);
+    addToCart(product.productId, quantity, {
+      unitPrice: campaignPriceFromNav || null,
+      campaignId: campaignIdFromNav,
+    });
   };
 
   const handlePlaceOrder = () => {
@@ -226,10 +238,11 @@ function ProductDetail() {
       orderItems: [{
         productId: product.productId,
         quantity: quantity,
-        unitPrice: product.price
+        unitPrice: effectiveUnitPrice
       }],
       shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
       storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
+      campaignId: campaignIdFromNav,
       discountCode: appliedDiscount ? appliedDiscount.code : null,
       discountAmount: appliedDiscount ? appliedDiscount.amount : null
     };
@@ -358,9 +371,16 @@ function ProductDetail() {
               </h1>
 
               <div className="flex items-baseline gap-4 mb-6">
-                <p className="text-5xl font-bold text-blue-600">
-                  ₹{product.price}
-                </p>
+                <div className="flex flex-col">
+                  <p className="text-5xl font-bold text-blue-600">
+                    ₹{effectiveUnitPrice}
+                  </p>
+                  {isCampaignPrice && (
+                    <p className="text-sm text-gray-500 line-through">
+                      ₹{product.price}
+                    </p>
+                  )}
+                </div>
                 <span className={`inline-block px-4 py-2 rounded-lg text-sm font-semibold ${
                   product.isLowStock
                     ? 'bg-orange-100 text-orange-800'
@@ -570,7 +590,7 @@ function ProductDetail() {
                   {/* Product Details */}
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">{product.name}</span>
-                    <span className="font-medium">₹{product.price}</span>
+                    <span className="font-medium">₹{effectiveUnitPrice}</span>
                   </div>
                   
                   {/* Quantity */}
@@ -582,7 +602,7 @@ function ProductDetail() {
                   {/* Subtotal */}
                   <div className="flex justify-between items-center pt-2 border-t border-gray-300">
                     <span className="text-gray-700">Subtotal</span>
-                    <span className="font-medium">₹{(product.price * quantity).toFixed(2)}</span>
+                    <span className="font-medium">₹{(effectiveUnitPrice * quantity).toFixed(2)}</span>
                   </div>
 
                   {/* Discount Applied */}
@@ -598,7 +618,7 @@ function ProductDetail() {
                     <span className="text-lg font-bold text-gray-900">Total</span>
                     <span className="text-lg font-bold text-blue-600">
                       ₹{(
-                        (product.price * quantity) - 
+                        (effectiveUnitPrice * quantity) - 
                         (appliedDiscount ? appliedDiscount.amount : 0)
                       ).toFixed(2)}
                     </span>

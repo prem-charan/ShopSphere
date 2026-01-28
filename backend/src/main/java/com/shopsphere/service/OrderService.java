@@ -61,6 +61,7 @@ public class OrderService {
         order.setOrderType(request.getOrderType().toUpperCase());
         order.setShippingAddress(request.getShippingAddress());
         order.setStoreLocation(request.getStoreLocation());
+        order.setCampaignId(request.getCampaignId());
         order.setStatus("CONFIRMED");
         order.setPaymentStatus("PENDING");
 
@@ -390,6 +391,7 @@ public class OrderService {
         response.setStoreLocation(order.getStoreLocation());
         response.setTrackingNumber(order.getTrackingNumber());
         response.setPaymentStatus(order.getPaymentStatus());
+        response.setCampaignId(order.getCampaignId());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 

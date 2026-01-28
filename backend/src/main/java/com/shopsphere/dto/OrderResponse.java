@@ -24,6 +24,7 @@ public class OrderResponse {
     private String storeLocation;
     private String trackingNumber;
     private String paymentStatus;
+    private Long campaignId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemDTO> orderItems;

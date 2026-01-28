@@ -4,6 +4,7 @@ import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FaSearch, FaShoppingCart } from 'react-icons/fa';
 import { addToCart } from '../utils/cart';
+import { campaignAPI } from '../services/campaignAPI';
 import CustomerHeader from '../components/CustomerHeader';
 
 function Home() {
@@ -14,10 +15,15 @@ function Home() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+  const [campaignProducts, setCampaignProducts] = useState([]); // [{ product, discountPercent, campaignPrice }]
+  const [campaignIndex, setCampaignIndex] = useState(0);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchCampaigns();
   }, []);
 
   const fetchProducts = async () => {
@@ -41,7 +47,46 @@ function Home() {
     }
   };
 
-  const filteredProducts = products.filter((product) => {
+  const fetchCampaigns = async () => {
+    try {
+      const res = await campaignAPI.getActiveCampaigns();
+      setCampaigns(res.data || []);
+    } catch (err) {
+      console.error('Error fetching campaigns:', err);
+    }
+  };
+
+  const selectCampaign = async (campaignId) => {
+    try {
+      setSelectedCampaignId(campaignId);
+      setLoading(true);
+      const res = await campaignAPI.getCampaignProducts(campaignId);
+      setCampaignProducts(res.data || []);
+      setSearchTerm('');
+      setSelectedCategory('');
+    } catch (err) {
+      console.error('Error fetching campaign products:', err);
+      setCampaignProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearCampaign = () => {
+    setSelectedCampaignId(null);
+    setCampaignProducts([]);
+  };
+
+  const baseProducts = selectedCampaignId
+    ? campaignProducts.map((cp) => ({
+        ...cp.product,
+        campaignDiscountPercent: cp.discountPercent,
+        campaignPrice: cp.campaignPrice,
+        campaignId: selectedCampaignId,
+      }))
+    : products;
+
+  const filteredProducts = baseProducts.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -63,7 +108,10 @@ function Home() {
       return;
     }
     if (product.stockQuantity === 0) return;
-    addToCart(product.productId, 1);
+    addToCart(product.productId, 1, {
+      unitPrice: product.campaignPrice || null,
+      campaignId: product.campaignId || null,
+    });
   };
 
   const handleBuyNowFromHome = (e, product) => {
@@ -73,7 +121,14 @@ function Home() {
       return;
     }
     if (product.stockQuantity === 0) return;
-    navigate(`/product/${product.productId}`, { state: { buyNow: true } });
+    navigate(`/product/${product.productId}`, {
+      state: {
+        buyNow: true,
+        campaignId: product.campaignId || null,
+        campaignPrice: product.campaignPrice || null,
+        campaignDiscountPercent: product.campaignDiscountPercent || null,
+      },
+    });
   };
 
   return (
@@ -146,6 +201,76 @@ function Home() {
         </div>
       </div>
 
+      {/* Campaigns (top of items section) */}
+      {campaigns.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 -mt-2 pb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xl font-bold text-gray-800">Campaigns</h3>
+            {selectedCampaignId && (
+              <button
+                onClick={clearCampaign}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear campaign
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCampaignIndex((i) => Math.max(0, i - 1))}
+              disabled={campaignIndex === 0}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-40"
+              title="Previous"
+            >
+              ←
+            </button>
+
+            <div className="flex-1 overflow-hidden">
+              <div className="flex gap-4">
+                {campaigns.slice(campaignIndex, campaignIndex + 3).map((c) => (
+                  <div
+                    key={c.campaignId}
+                    onClick={() => selectCampaign(c.campaignId)}
+                    className={`cursor-pointer flex-1 min-w-0 bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition ${
+                      selectedCampaignId === c.campaignId ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-gray-900 truncate">{c.title}</div>
+                        <div className="text-xs text-gray-500 truncate">{c.targetAudience || 'Special offers'}</div>
+                      </div>
+                      <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
+                        Active
+                      </div>
+                    </div>
+                    {c.bannerImageUrl && (
+                      <div className="mt-3 h-24 rounded-lg overflow-hidden bg-gray-100">
+                        <img
+                          src={c.bannerImageUrl}
+                          alt={c.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setCampaignIndex((i) => Math.min(Math.max(0, campaigns.length - 3), i + 1))}
+              disabled={campaignIndex >= Math.max(0, campaigns.length - 3)}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-40"
+              title="Next"
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 pb-16">
         {loading ? (
@@ -184,9 +309,20 @@ function Home() {
                   </h3>
                   <p className="text-gray-500 text-sm mb-2">{product.category}</p>
                   <div className="flex justify-between items-center">
-                    <p className="text-2xl font-bold text-blue-600">
-                      ₹{product.price}
-                    </p>
+                    <div className="flex flex-col">
+                      {product.campaignPrice ? (
+                        <>
+                          <p className="text-2xl font-bold text-blue-600">
+                            ₹{Number(product.campaignPrice).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500 line-through">
+                            ₹{Number(product.price).toFixed(2)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-2xl font-bold text-blue-600">₹{product.price}</p>
+                      )}
+                    </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       product.isLowStock
                         ? 'bg-orange-100 text-orange-800'

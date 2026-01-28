@@ -55,6 +55,10 @@ public class Order {
     @Column(length = 20)
     private String paymentStatus; // PENDING, COMPLETED, FAILED
 
+    // Optional: if the order was placed under a marketing campaign
+    @Column(name = "campaign_id")
+    private Long campaignId;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
