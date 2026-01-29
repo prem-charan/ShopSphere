@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FaSearch, FaShoppingCart, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
@@ -12,6 +12,7 @@ import 'slick-carousel/slick/slick-theme.css';
 
 function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +29,22 @@ function Home() {
     fetchCategories();
     fetchCampaigns();
   }, []);
+
+  useEffect(() => {
+    // Handle search term from navigation state
+    if (location.state?.search) {
+      setSearchTerm(location.state.search);
+      // Clear the state to prevent re-application on refresh
+      window.history.replaceState({}, document.title);
+    }
+    
+    // Handle clear filters from navigation state
+    if (location.state?.clearFilters) {
+      clearCampaign();
+      // Clear the state to prevent re-application on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     // Check for active campaigns for all products
@@ -111,6 +128,8 @@ function Home() {
   const clearCampaign = () => {
     setSelectedCampaignId(null);
     setCampaignProducts([]);
+    setSearchTerm('');
+    setSelectedCategory('');
   };
 
   const baseProducts = selectedCampaignId
@@ -193,33 +212,15 @@ function Home() {
         </div>
       )}
 
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">Welcome to ShopSphere</h2>
-          <p className="text-xl mb-8">Discover amazing products at great prices</p>
-          
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search for products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-full text-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Categories */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex gap-3 overflow-x-auto pb-2">
           <button
-            onClick={() => setSelectedCategory('')}
+            onClick={() => {
+              setSelectedCategory('');
+              clearCampaign();
+            }}
             className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
               !selectedCategory
                 ? 'bg-blue-600 text-white'

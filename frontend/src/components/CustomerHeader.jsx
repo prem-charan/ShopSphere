@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome, FaGift } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome, FaGift, FaSearch } from 'react-icons/fa';
 import { FaShoppingCart } from 'react-icons/fa';
 import { getCartCount } from '../utils/cart';
 
@@ -9,6 +9,21 @@ const CustomerHeader = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const [cartCount, setCartCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    // Navigate to home page with search term for live search
+    navigate('/', { state: { search: value } });
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate('/', { state: { search: searchTerm.trim() } });
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -35,10 +50,26 @@ const CustomerHeader = () => {
           <div 
             className="cursor-pointer"
           >
-            <Link to="/">
+            <Link to="/" state={{ clearFilters: true }}>
               <h1 className="text-2xl font-bold text-blue-600">ShopSphere</h1>
             </Link>
-            <p className="text-sm text-gray-500">Your One-Stop Shop</p>
+            <Link to="/" state={{ clearFilters: true }}>
+              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer">Your One-Stop Shop</p>
+            </Link>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl mx-8">
+            <form onSubmit={handleSearch} className="relative">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search for products..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </form>
           </div>
           
           {/* Navigation & User Actions */}
