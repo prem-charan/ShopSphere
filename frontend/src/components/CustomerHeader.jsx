@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaUser, FaSignOutAlt, FaShoppingBag, FaHome, FaGift } from 'react-icons/fa';
 import { FaShoppingCart } from 'react-icons/fa';
@@ -34,9 +34,10 @@ const CustomerHeader = () => {
           {/* Logo */}
           <div 
             className="cursor-pointer"
-            onClick={() => navigate('/')}
           >
-            <h1 className="text-3xl font-bold text-blue-600">ShopSphere</h1>
+            <Link to="/">
+              <h1 className="text-2xl font-bold text-blue-600">ShopSphere</h1>
+            </Link>
             <p className="text-sm text-gray-500">Your One-Stop Shop</p>
           </div>
           
@@ -44,13 +45,6 @@ const CustomerHeader = () => {
           <div className="flex items-center gap-4">
             {isAuthenticated() ? (
               <>
-                <button
-                  onClick={() => navigate('/')}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <FaHome />
-                  <span>Home</span>
-                </button>
                 
                 <button
                   onClick={() => navigate('/loyalty')}
