@@ -82,6 +82,21 @@ const Invoice = () => {
 
   const total = useMemo(() => Number(order?.totalAmount || 0), [order]);
 
+  const getStatusBadgeClass = (status) => {
+    const statusClasses = {
+      // Order statuses
+      CONFIRMED: 'bg-blue-100 text-blue-800',
+      SHIPPED: 'bg-purple-100 text-purple-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+      CANCELLED: 'bg-red-100 text-red-800',
+      // Payment statuses
+      PENDING: 'bg-orange-100 text-orange-800',
+      COMPLETED: 'bg-green-100 text-green-800',
+      FAILED: 'bg-red-100 text-red-800',
+    };
+    return statusClasses[status] || 'bg-gray-100 text-gray-800';
+  };
+
   const handlePrintToPdf = () => {
     // Browser "Save as PDF" via print dialog
     window.print();
@@ -154,11 +169,25 @@ const Invoice = () => {
                 <span className="font-semibold">Order Date:</span>{' '}
                 {new Date(order.createdAt).toLocaleString()}
               </div>
-              <div>
-                <span className="font-semibold">Payment:</span> {order.paymentStatus}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Payment:</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClass(
+                    order.paymentStatus
+                  )}`}
+                >
+                  {order.paymentStatus}
+                </span>
               </div>
-              <div>
-                <span className="font-semibold">Status:</span> {order.status}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Status:</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClass(
+                    order.status
+                  )}`}
+                >
+                  {order.status}
+                </span>
               </div>
             </div>
           </div>

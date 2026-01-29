@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
@@ -134,6 +135,16 @@ public class ProductController {
         Long count = productService.getLowStockCount();
         return ResponseEntity.ok(
             ApiResponse.success("Low stock count retrieved successfully", count)
+        );
+    }
+
+    // Get products available for campaigns
+    @GetMapping("/available-for-campaign")
+    public ResponseEntity<ApiResponse<List<ProductDTO>>> getProductsAvailableForCampaign(@RequestParam Optional<Long> campaignId) {
+        log.info("GET /api/products/available-for-campaign?campaignId={} - Fetching products available for campaign", campaignId.orElse(null));
+        List<ProductDTO> products = productService.getProductsAvailableForCampaign(campaignId);
+        return ResponseEntity.ok(
+            ApiResponse.success("Products available for campaigns retrieved successfully", products)
         );
     }
 }

@@ -71,6 +71,15 @@ export const productAPI = {
 
   // Get low stock count
   getLowStockCount: () => api.get('/products/low-stock/count'),
+
+  // Get products available for campaigns
+  getProductsAvailableForCampaigns: (campaignId) => {
+    let url = '/products/available-for-campaign';
+    if (campaignId) {
+      url += `?campaignId=${campaignId}`;
+    }
+    return api.get(url);
+  },
 };
 
 export default api;

@@ -51,12 +51,35 @@ public class CampaignController {
     }
 
     // Admin
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CampaignDTO>> getAllCampaigns() {
+        log.info("GET /api/campaigns - get all campaigns");
+        return ResponseEntity.ok(campaignService.getAllCampaigns());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CampaignDTO> createCampaign(@Valid @RequestBody CreateCampaignRequest request) {
         log.info("POST /api/campaigns - create campaign {}", request.getTitle());
         CampaignDTO created = campaignService.createCampaign(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CampaignDTO> updateCampaign(@PathVariable Long id, @Valid @RequestBody CreateCampaignRequest request) {
+        log.info("PUT /api/campaigns/{} - update campaign {}", id, request.getTitle());
+        CampaignDTO updated = campaignService.updateCampaign(id, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCampaign(@PathVariable Long id) {
+        log.info("DELETE /api/campaigns/{} - delete campaign", id);
+        campaignService.deleteCampaign(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

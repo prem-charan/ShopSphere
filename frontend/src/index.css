@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+.slick-prev:before,
+.slick-next:before {
+  color: black !important;
+}
+
+.slick-prev {
+  left: -25px !important;
+}
+
+.slick-next {
+  right: -25px !important;
+}
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-800 antialiased;

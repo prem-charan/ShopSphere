@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -193,5 +196,26 @@ public class ProductService {
     public Long getLowStockCount() {
         log.info("Fetching low stock count");
         return productRepository.countLowStockProducts(lowStockThreshold);
+    }
+
+    // Get products available for a campaign
+    @Transactional(readOnly = true)
+    public List<ProductDTO> getProductsAvailableForCampaign(Optional<Long> campaignId) {
+        log.info("Fetching products available for campaign: {}", campaignId.orElse(null));
+
+        // 1. Get all products that are not in any *active* campaign.
+        List<Product> availableProducts = productRepository.findProductsNotInAnyActiveCampaign(LocalDate.now());
+        Map<Long, Product> productMap = availableProducts.stream()
+                .collect(Collectors.toMap(Product::getProductId, p -> p));
+
+        // 2. If editing a campaign, add its products to the list so they can be re-selected.
+        campaignId.ifPresent(id -> {
+            List<Product> productsInThisCampaign = productRepository.findProductsByCampaignId(id);
+            productsInThisCampaign.forEach(p -> productMap.putIfAbsent(p.getProductId(), p));
+        });
+
+        return productMap.values().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 }

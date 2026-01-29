@@ -1,14 +1,17 @@
 package com.shopsphere.service;
 
+import com.shopsphere.dto.CampaignDTO;
 import com.shopsphere.dto.CreateOrderRequest;
 import com.shopsphere.dto.OrderItemDTO;
 import com.shopsphere.dto.OrderResponse;
 import com.shopsphere.dto.UpdateOrderStatusRequest;
 import com.shopsphere.entity.Order;
 import com.shopsphere.entity.OrderItem;
+import com.shopsphere.entity.Payment;
 import com.shopsphere.entity.Product;
 import com.shopsphere.exception.ResourceNotFoundException;
 import com.shopsphere.repository.OrderRepository;
+import com.shopsphere.repository.PaymentRepository;
 import com.shopsphere.repository.ProductRepository;
 import com.shopsphere.repository.StoreProductInventoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +32,12 @@ public class OrderService {
     // (Notes feature removed)
 
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     private final StoreProductInventoryRepository storeInventoryRepository;
     private final StoreInventoryService storeInventoryService;
     private final LoyaltyService loyaltyService;
+    private final CampaignService campaignService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -61,8 +66,11 @@ public class OrderService {
         order.setOrderType(request.getOrderType().toUpperCase());
         order.setShippingAddress(request.getShippingAddress());
         order.setStoreLocation(request.getStoreLocation());
-        order.setCampaignId(request.getCampaignId());
+        order.setCampaignId(request.getCampaignId() != null ? request.getCampaignId() : null);
         order.setStatus("CONFIRMED");
+        
+        // For COD orders, payment status remains PENDING until delivery
+        // For other payment methods, payment status is set when payment is processed
         order.setPaymentStatus("PENDING");
 
         log.info("=== DISCOUNT INFO RECEIVED ===");
@@ -73,8 +81,9 @@ public class OrderService {
 
         // Process order items
         for (OrderItemDTO itemDTO : request.getOrderItems()) {
-            Product product = productRepository.findById(itemDTO.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemDTO.getProductId()));
+            Long productId = java.util.Objects.requireNonNull(itemDTO.getProductId(), "Product ID is required");
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
 
             // Check stock availability
             if (request.getOrderType().equalsIgnoreCase("IN_STORE")) {
@@ -98,7 +107,8 @@ public class OrderService {
             orderItem.setProductName(product.getName());
             orderItem.setProductSku(product.getSku());
             orderItem.setQuantity(itemDTO.getQuantity());
-            orderItem.setUnitPrice(product.getPrice());
+            orderItem.setOriginalPrice(product.getPrice()); // Store original price
+            orderItem.setUnitPrice(itemDTO.getUnitPrice() != null ? itemDTO.getUnitPrice() : product.getPrice()); // Use campaign price if provided
             orderItem.setStoreLocation(request.getOrderType().equalsIgnoreCase("IN_STORE") ? 
                     request.getStoreLocation() : null);
             
@@ -291,6 +301,18 @@ public class OrderService {
             restoreStock(order);
         }
 
+        // If order is delivered and payment method is COD, complete the payment
+        if (newStatus.equals("DELIVERED") && "COD".equals(order.getPaymentMethod()) && "PENDING".equals(order.getPaymentStatus())) {
+            order.setPaymentStatus("COMPLETED");
+            
+            // Generate transaction ID for COD payment
+            String transactionId = "TXN" + System.currentTimeMillis() + generateRandomString(10);
+            log.info("COD payment completed for order {} with transaction ID: {}", orderId, transactionId);
+            
+            // Create payment record for COD
+            createCODPaymentRecord(order, transactionId);
+        }
+
         Order updatedOrder = orderRepository.save(order);
         log.info("Order status updated successfully");
         
@@ -321,6 +343,14 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
+        // COD orders should only be marked as COMPLETED after the order is delivered.
+        if ("COD".equalsIgnoreCase(order.getPaymentMethod())
+                && paymentStatus.equalsIgnoreCase("COMPLETED")
+                && !"DELIVERED".equalsIgnoreCase(order.getStatus())) {
+            log.info("Ignoring paymentStatus COMPLETED for COD order {} because status is {}", orderId, order.getStatus());
+            return convertToOrderResponse(order);
+        }
+
         order.setPaymentStatus(paymentStatus.toUpperCase());
         
         // Auto-confirm order when payment is completed
@@ -330,6 +360,19 @@ public class OrderService {
 
         Order updatedOrder = orderRepository.save(order);
         return convertToOrderResponse(updatedOrder);
+    }
+
+    @Transactional
+    public void updatePaymentMethod(Long orderId, String paymentMethod) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        order.setPaymentMethod(paymentMethod != null ? paymentMethod.toUpperCase() : null);
+        // COD must remain pending until delivery
+        if ("COD".equalsIgnoreCase(paymentMethod) && (order.getPaymentStatus() == null || !"COMPLETED".equalsIgnoreCase(order.getPaymentStatus()))) {
+            order.setPaymentStatus("PENDING");
+        }
+        orderRepository.save(order);
     }
 
     private void restoreStock(Order order) {
@@ -371,7 +414,7 @@ public class OrderService {
         // Define valid status transitions
         // Flow: CONFIRMED → SHIPPED → DELIVERED or CANCELLED
         return switch (currentStatus) {
-            case "CONFIRMED" -> List.of("SHIPPED", "CANCELLED").contains(newStatus);
+            case "CONFIRMED" -> List.of("SHIPPED", "DELIVERED", "CANCELLED").contains(newStatus);
             case "SHIPPED" -> List.of("DELIVERED", "CANCELLED").contains(newStatus);
             case "DELIVERED", "CANCELLED" -> false; // Terminal states
             default -> false;
@@ -390,8 +433,38 @@ public class OrderService {
         response.setShippingAddress(order.getShippingAddress());
         response.setStoreLocation(order.getStoreLocation());
         response.setTrackingNumber(order.getTrackingNumber());
-        response.setPaymentStatus(order.getPaymentStatus());
+        response.setPaymentMethod(order.getPaymentMethod());
+        // COD stays pending until the order is delivered
+        if ("COD".equalsIgnoreCase(order.getPaymentMethod()) && !"DELIVERED".equalsIgnoreCase(order.getStatus())) {
+            response.setPaymentStatus("PENDING");
+        } else {
+            response.setPaymentStatus(order.getPaymentStatus());
+        }
         response.setCampaignId(order.getCampaignId());
+        
+        // Set campaign information if applicable
+        if (order.getCampaignId() != null) {
+            try {
+                CampaignDTO campaign = campaignService.getCampaign(order.getCampaignId());
+                response.setCampaignTitle(campaign.getTitle());
+                
+                // Calculate campaign savings
+                BigDecimal campaignSavings = BigDecimal.ZERO;
+                for (OrderItem item : order.getOrderItems()) {
+                    if (item.getOriginalPrice() != null && item.getUnitPrice() != null) {
+                        BigDecimal itemSavings = item.getOriginalPrice().subtract(item.getUnitPrice())
+                                .multiply(BigDecimal.valueOf(item.getQuantity()));
+                        campaignSavings = campaignSavings.add(itemSavings);
+                    }
+                }
+                response.setCampaignSavings(campaignSavings);
+            } catch (Exception e) {
+                    log.warn("Could not fetch campaign details for order {}: {}", order.getCampaignId(), e.getMessage());
+                    response.setCampaignTitle("Campaign Offer");
+                    response.setCampaignSavings(BigDecimal.ZERO);
+            }
+        }
+        
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 
@@ -416,9 +489,44 @@ public class OrderService {
         dto.setProductSku(item.getProductSku());
         dto.setQuantity(item.getQuantity());
         dto.setUnitPrice(item.getUnitPrice());
+        dto.setOriginalPrice(item.getOriginalPrice());
         dto.setSubtotal(item.getSubtotal());
         dto.setStoreLocation(item.getStoreLocation());
         return dto;
+    }
+
+    private String generateRandomString(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            int index = (int) (Math.random() * chars.length());
+            sb.append(chars.charAt(index));
+        }
+        return sb.toString();
+    }
+
+    private void createCODPaymentRecord(Order order, String transactionId) {
+        try {
+            // If an initiated COD payment already exists for this order, update it.
+            Payment payment = paymentRepository.findByOrderId(order.getOrderId()).stream()
+                    .filter(p -> "COD".equalsIgnoreCase(p.getPaymentMethod()))
+                    .filter(p -> "INITIATED".equalsIgnoreCase(p.getStatus()) || "PROCESSING".equalsIgnoreCase(p.getStatus()))
+                    .findFirst()
+                    .orElseGet(Payment::new);
+
+            payment.setOrderId(order.getOrderId());
+            payment.setCustomerId(order.getCustomerId());
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod("COD");
+            payment.setStatus("SUCCESS");
+            payment.setTransactionId(transactionId);
+            payment.setNotes("Cash on Delivery payment completed on order delivery");
+
+            paymentRepository.save(payment);
+            log.info("COD payment record saved/updated: {}", transactionId);
+        } catch (Exception e) {
+            log.error("Error creating COD payment record for order {}: {}", order.getOrderId(), e.getMessage());
+        }
     }
 
 }

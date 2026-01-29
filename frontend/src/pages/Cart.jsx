@@ -73,6 +73,7 @@ function Cart() {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             campaignId: item.campaignId,
+            campaignTitle: item.campaignTitle,
           };
         })
       );
@@ -453,12 +454,36 @@ function Cart() {
               <h3 className="font-semibold text-lg mb-4 text-gray-800">Order Summary</h3>
               <div className="space-y-3">
                 {cartRows.map((row) => (
-                  <div key={row.product.productId} className="flex justify-between items-center">
-                    <div className="text-gray-700">
-                      {row.product.name} <span className="text-xs text-gray-500">x {row.quantity}</span>
+                  <div key={row.product.productId} className="flex justify-between items-start">
+                    <div className="text-gray-700 flex-1">
+                      <div className="font-medium">{row.product.name}</div>
+                      <div className="text-xs text-gray-500">x {row.quantity}</div>
+                      {row.campaignId && (
+                        <div className="text-xs text-green-600 font-medium mt-1">
+                          🎯 {row.campaignTitle || 'Campaign Offer Applied'}
+                          {row.unitPrice != null && row.unitPrice < row.product.price && (
+                            <span className="ml-1">
+                              (Save ₹{(Number(row.product.price) - Number(row.unitPrice)).toFixed(2)})
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="font-medium">
-                      ₹{(((row.unitPrice != null ? row.unitPrice : row.product.price) || 0) * row.quantity).toFixed(2)}
+                    <div className="text-right">
+                      {row.unitPrice != null && row.unitPrice < row.product.price ? (
+                        <>
+                          <div className="font-medium text-green-600">
+                            ₹{(Number(row.unitPrice) * row.quantity).toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-400 line-through">
+                            ₹{(Number(row.product.price) * row.quantity).toFixed(2)}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="font-medium">
+                          ₹{(((row.unitPrice != null ? row.unitPrice : row.product.price) || 0) * row.quantity).toFixed(2)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { productAPI } from '../services/api';
+import { campaignAPI } from '../services/campaignAPI';
 import { createOrder, getStoresWithProduct, checkProductAvailability, getAllStoreLocations, getInventoryByProduct } from '../services/orderAPI';
 import { loyaltyAPI } from '../services/loyaltyAPI';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +34,7 @@ function ProductDetail() {
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [discountValidating, setDiscountValidating] = useState(false);
   const [discountError, setDiscountError] = useState('');
+  const [activeCampaign, setActiveCampaign] = useState(null);
 
   // Campaign context (optional) when user navigates from Home campaign selection
   const campaignIdFromNav = location.state?.campaignId ?? null;
@@ -42,6 +44,15 @@ function ProductDetail() {
     fetchProduct();
     fetchStores();
   }, [id]);
+
+  useEffect(() => {
+    if (product && product.productId) {
+      checkActiveCampaigns();
+    } else if (product) {
+      // Fallback: check with URL ID if product doesn't have productId
+      checkActiveCampaigns();
+    }
+  }, [product?.productId, product]); // Include product as fallback
 
   // If user clicked "Buy Now" from Home, open checkout automatically after product loads
   useEffect(() => {
@@ -54,10 +65,66 @@ function ProductDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, user, product]);
 
-  const effectiveUnitPrice =
-    campaignPriceFromNav != null ? Number(campaignPriceFromNav) : Number(product?.price ?? 0);
+  const checkActiveCampaigns = async () => {
+    console.log('=== checkActiveCampaigns called for product:', id);
+    console.log('Product object:', product);
+    try {
+      console.log('=== Checking active campaigns for product:', id);
+      const response = await campaignAPI.getActiveCampaigns();
+      const campaigns = response.data || [];
+      console.log('Found campaigns:', campaigns.length);
+      console.log('Campaigns:', campaigns);
+      
+      for (const campaign of campaigns) {
+        try {
+          console.log('Checking campaign:', campaign.campaignId, campaign.title);
+          const campaignProductsRes = await campaignAPI.getCampaignProducts(campaign.campaignId);
+          const campaignProducts = campaignProductsRes.data || [];
+          console.log('Campaign products for', campaign.campaignId, ':', campaignProducts.length);
+          
+          const productInCampaign = campaignProducts.find(cp => cp.product.productId === parseInt(id));
+          
+          if (productInCampaign) {
+            console.log('Found product in campaign:', campaign.campaignId, productInCampaign);
+            setActiveCampaign({
+              campaignId: campaign.campaignId,
+              title: campaign.title,
+              discountPercent: productInCampaign.discountPercent,
+              campaignPrice: productInCampaign.campaignPrice
+            });
+            console.log('Set active campaign:', campaign.title, 'price:', productInCampaign.campaignPrice);
+            break;
+          }
+        } catch (err) {
+          console.error('Error checking campaign products:', err);
+        }
+      }
+      
+      if (!activeCampaign) {
+        console.log('No active campaign found for product:', id);
+      }
+    } catch (err) {
+      console.error('Error fetching active campaigns:', err);
+    }
+  };
 
-  const isCampaignPrice = campaignPriceFromNav != null;
+  const effectiveUnitPrice =
+    campaignPriceFromNav != null ? Number(campaignPriceFromNav) : 
+    activeCampaign?.campaignPrice ? Number(activeCampaign.campaignPrice) : 
+    Number(product?.price ?? 0);
+
+  const isCampaignPrice = campaignPriceFromNav != null || activeCampaign?.campaignPrice != null;
+  const currentCampaignId = campaignIdFromNav || activeCampaign?.campaignId || null;
+
+  console.log('=== FINAL Price Calculation ===');
+  console.log('Product ID:', id);
+  console.log('Product price:', product?.price);
+  console.log('Campaign price from nav:', campaignPriceFromNav);
+  console.log('Active campaign:', activeCampaign);
+  console.log('Effective unit price:', effectiveUnitPrice);
+  console.log('Is campaign price:', isCampaignPrice);
+  console.log('Current campaign ID:', currentCampaignId);
+  console.log('=============================');
 
   // Auto-fetch and apply active coupon when checkout modal opens
   useEffect(() => {
@@ -199,8 +266,9 @@ function ProductDetail() {
     }
     if (!product || product.stockQuantity === 0) return;
     addToCart(product.productId, quantity, {
-      unitPrice: campaignPriceFromNav || null,
-      campaignId: campaignIdFromNav,
+      unitPrice: effectiveUnitPrice !== product.price ? effectiveUnitPrice : null,
+      campaignId: currentCampaignId,
+      campaignTitle: activeCampaign?.title || null,
     });
   };
 
@@ -242,7 +310,7 @@ function ProductDetail() {
       }],
       shippingAddress: orderType === 'ONLINE' ? shippingAddress : null,
       storeLocation: orderType === 'IN_STORE' ? selectedStore : null,
-      campaignId: campaignIdFromNav,
+      campaignId: currentCampaignId,
       discountCode: appliedDiscount ? appliedDiscount.code : null,
       discountAmount: appliedDiscount ? appliedDiscount.amount : null
     };
@@ -405,6 +473,19 @@ function ProductDetail() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800">Description</h3>
                   <p className="text-gray-600 leading-relaxed">{product.description}</p>
+                </div>
+              )}
+
+              {/* Campaign Discount Banner */}
+              {isCampaignPrice && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <FaGift className="text-green-600" />
+                    <span className="font-semibold">{activeCampaign?.title || 'Campaign Discount Applied!'}</span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-1">
+                    Save {activeCampaign?.discountPercent || ''}% on this product
+                  </p>
                 </div>
               )}
 
@@ -588,15 +669,37 @@ function ProductDetail() {
                 
                 <div className="space-y-3">
                   {/* Product Details */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">{product.name}</span>
-                    <span className="font-medium">₹{effectiveUnitPrice}</span>
-                  </div>
-                  
-                  {/* Quantity */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Quantity</span>
-                    <span className="font-medium">x {quantity}</span>
+                  <div className="flex justify-between items-start">
+                    <div className="text-gray-700 flex-1">
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-xs text-gray-500">x {quantity}</div>
+                      {isCampaignPrice && (
+                        <div className="text-xs text-green-600 font-medium mt-1">
+                          🎯 {activeCampaign?.title || 'Campaign Offer Applied'}
+                          {effectiveUnitPrice < product.price && (
+                            <span className="ml-1">
+                              (Save ₹{(Number(product.price) - Number(effectiveUnitPrice)).toFixed(2)})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      {isCampaignPrice && effectiveUnitPrice < product.price ? (
+                        <>
+                          <div className="text-xs text-gray-400 line-through">
+                            ₹{(Number(product.price) * quantity).toFixed(2)}
+                          </div>
+                          <div className="font-medium text-green-600">
+                            ₹{(Number(effectiveUnitPrice) * quantity).toFixed(2)}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="font-medium">
+                          ₹{(Number(effectiveUnitPrice) * quantity).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Subtotal */}
@@ -608,8 +711,8 @@ function ProductDetail() {
                   {/* Discount Applied */}
                   {appliedDiscount && (
                     <div className="flex justify-between items-center text-green-600">
-                      <span className="font-medium">Discount ({appliedDiscount.code})</span>
-                      <span className="font-semibold">- ₹{appliedDiscount.amount.toFixed(2)}</span>
+                      <span className="font-medium text-sm">Discount ({appliedDiscount.code})</span>
+                      <span className="font-semibold text-sm">- ₹{appliedDiscount.amount.toFixed(2)}</span>
                     </div>
                   )}
 
@@ -625,10 +728,15 @@ function ProductDetail() {
                   </div>
                   
                   {/* Savings Message */}
-                  {appliedDiscount && (
+                  {(appliedDiscount || isCampaignPrice) && (
                     <div className="pt-2">
                       <p className="text-sm text-green-600 font-medium text-center bg-green-50 py-2 rounded-lg">
-                        🎉 You saved ₹{appliedDiscount.amount}!
+                        🎉 You saved ₹{
+                          ((isCampaignPrice && effectiveUnitPrice < product.price) 
+                            ? (Number(product.price) - Number(effectiveUnitPrice)) * quantity 
+                            : 0) + 
+                          (appliedDiscount ? appliedDiscount.amount : 0)
+                        }!
                       </p>
                     </div>
                   )}

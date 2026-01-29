@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FaSearch, FaShoppingCart } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { addToCart } from '../utils/cart';
 import { campaignAPI } from '../services/campaignAPI';
 import CustomerHeader from '../components/CustomerHeader';
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
 
 function Home() {
   const navigate = useNavigate();
@@ -18,13 +21,20 @@ function Home() {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [campaignProducts, setCampaignProducts] = useState([]); // [{ product, discountPercent, campaignPrice }]
-  const [campaignIndex, setCampaignIndex] = useState(0);
+  const [productCampaigns, setProductCampaigns] = useState(new Map()); // productId -> campaign info
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchCampaigns();
   }, []);
+
+  useEffect(() => {
+    // Check for active campaigns for all products
+    if (products.length > 0 && campaigns.length > 0) {
+      checkProductCampaigns();
+    }
+  }, [products, campaigns]);
 
   const fetchProducts = async () => {
     try {
@@ -72,6 +82,32 @@ function Home() {
     }
   };
 
+  const checkProductCampaigns = async () => {
+    const campaignMap = new Map();
+    
+    for (const campaign of campaigns) {
+      try {
+        const campaignProductsRes = await campaignAPI.getCampaignProducts(campaign.campaignId);
+        const campaignProducts = campaignProductsRes.data || [];
+        
+        campaignProducts.forEach(cp => {
+          if (!campaignMap.has(cp.product.productId)) {
+            campaignMap.set(cp.product.productId, {
+              campaignId: campaign.campaignId,
+              title: campaign.title,
+              discountPercent: cp.discountPercent,
+              campaignPrice: cp.campaignPrice
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Error checking campaign products:', err);
+      }
+    }
+    
+    setProductCampaigns(campaignMap);
+  };
+
   const clearCampaign = () => {
     setSelectedCampaignId(null);
     setCampaignProducts([]);
@@ -84,7 +120,16 @@ function Home() {
         campaignPrice: cp.campaignPrice,
         campaignId: selectedCampaignId,
       }))
-    : products;
+    : products.map(product => {
+        const campaign = productCampaigns.get(product.productId);
+        return campaign ? {
+          ...product,
+          campaignDiscountPercent: campaign.discountPercent,
+          campaignPrice: campaign.campaignPrice,
+          campaignId: campaign.campaignId,
+          campaignTitle: campaign.title,
+        } : product;
+      });
 
   const filteredProducts = baseProducts.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -101,6 +146,18 @@ function Home() {
     }
   };
 
+  const carouselSettings = {
+    dots: true,
+    infinite: campaigns.length > 1,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 5000,
+    nextArrow: <FaChevronRight color="black" />,
+    prevArrow: <FaChevronLeft color="black" />,
+  };
+
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
     if (!isAuthenticated()) {
@@ -111,25 +168,11 @@ function Home() {
     addToCart(product.productId, 1, {
       unitPrice: product.campaignPrice || null,
       campaignId: product.campaignId || null,
+      campaignTitle: product.campaignTitle || null,
     });
+    // Cart will update automatically via event listener
   };
 
-  const handleBuyNowFromHome = (e, product) => {
-    e.stopPropagation();
-    if (!isAuthenticated()) {
-      navigate('/login', { state: { from: `/product/${product.productId}` } });
-      return;
-    }
-    if (product.stockQuantity === 0) return;
-    navigate(`/product/${product.productId}`, {
-      state: {
-        buyNow: true,
-        campaignId: product.campaignId || null,
-        campaignPrice: product.campaignPrice || null,
-        campaignDiscountPercent: product.campaignDiscountPercent || null,
-      },
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,70 +246,38 @@ function Home() {
 
       {/* Campaigns (top of items section) */}
       {campaigns.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 -mt-2 pb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xl font-bold text-gray-800">Campaigns</h3>
-            {selectedCampaignId && (
-              <button
-                onClick={clearCampaign}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Clear campaign
-              </button>
-            )}
-          </div>
+        <div className="max-w-7xl mx-auto px-12 -mt-2 pb-6">
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setCampaignIndex((i) => Math.max(0, i - 1))}
-              disabled={campaignIndex === 0}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-40"
-              title="Previous"
-            >
-              ←
-            </button>
-
-            <div className="flex-1 overflow-hidden">
-              <div className="flex gap-4">
-                {campaigns.slice(campaignIndex, campaignIndex + 3).map((c) => (
+          <div className="relative">
+            <Slider {...carouselSettings}>
+              {campaigns.map((c) => (
+                <div key={c.campaignId} className="px-3">
                   <div
-                    key={c.campaignId}
                     onClick={() => selectCampaign(c.campaignId)}
-                    className={`cursor-pointer flex-1 min-w-0 bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition ${
-                      selectedCampaignId === c.campaignId ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200'
+                    className={`cursor-pointer rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 overflow-hidden ${
+                      selectedCampaignId === c.campaignId ? 'ring-4 ring-blue-300' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-semibold text-gray-900 truncate">{c.title}</div>
-                        <div className="text-xs text-gray-500 truncate">{c.targetAudience || 'Special offers'}</div>
-                      </div>
-                      <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                        Active
-                      </div>
-                    </div>
-                    {c.bannerImageUrl && (
-                      <div className="mt-3 h-24 rounded-lg overflow-hidden bg-gray-100">
+                    {c.bannerImageUrl ? (
+                      <div className="h-48 bg-gray-100">
                         <img
                           src={c.bannerImageUrl}
                           alt={c.title}
                           className="w-full h-full object-cover"
                         />
                       </div>
+                    ) : (
+                      <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">🎁</div>
+                          <div className="text-sm text-gray-600 font-medium">{c.title}</div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setCampaignIndex((i) => Math.min(Math.max(0, campaigns.length - 3), i + 1))}
-              disabled={campaignIndex >= Math.max(0, campaigns.length - 3)}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-lg disabled:opacity-40"
-              title="Next"
-            >
-              →
-            </button>
+                </div>
+              ))}
+            </Slider>
           </div>
         </div>
       )}
@@ -331,20 +342,16 @@ function Home() {
                       {product.stockQuantity} in stock
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <button
-                      onClick={(e) => handleBuyNowFromHome(e, product)}
-                      disabled={product.stockQuantity === 0}
-                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                    >
-                      Buy Now
-                    </button>
+                  <div className="mt-4">
                     <button
                       onClick={(e) => handleAddToCart(e, product)}
                       disabled={product.stockQuantity === 0}
-                      className="w-full py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      Add to Cart
+                      <div className="flex items-center justify-center gap-2">
+                        <FaShoppingCart />
+                        <span>Add to Cart</span>
+                      </div>
                     </button>
                   </div>
                 </div>

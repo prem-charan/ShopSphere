@@ -43,15 +43,18 @@ public class PaymentService {
         payment.setPaymentMethod(method);
         payment.setNotes(request.getNotes());
 
+        // Persist payment method on order for later COD settlement
+        orderService.updatePaymentMethod(request.getOrderId(), method);
+
         // Set method-specific details
         if (method.equals("UPI")) {
             payment.setStatus("INITIATED");
             payment.setUpiId(request.getUpiId());
         } else if (method.equals("COD")) {
-            payment.setStatus("SUCCESS"); // COD is auto-successful
+            // COD is NOT successful at order time; it becomes successful only after delivery.
+            // Keep payment pending with no transaction id until delivered.
+            payment.setStatus("INITIATED");
             payment.setNotes("Cash on Delivery - Payment will be collected at delivery");
-            // Update order payment status immediately for COD
-            orderService.updatePaymentStatus(payment.getOrderId(), "COMPLETED");
         }
 
         Payment savedPayment = paymentRepository.save(payment);
@@ -94,6 +97,10 @@ public class PaymentService {
             payment.setStatus("SUCCESS");
             payment.setNotes("UPI payment successful via " + payment.getUpiId());
 
+            if (payment.getTransactionId() == null || payment.getTransactionId().isBlank()) {
+                payment.setTransactionId(generateTransactionId());
+            }
+
             // Update order payment status
             orderService.updatePaymentStatus(payment.getOrderId(), "COMPLETED");
             
@@ -110,6 +117,10 @@ public class PaymentService {
 
         Payment updatedPayment = paymentRepository.save(payment);
         return convertToResponse(updatedPayment);
+    }
+
+    private String generateTransactionId() {
+        return "TXN" + System.currentTimeMillis() + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     @Transactional(readOnly = true)

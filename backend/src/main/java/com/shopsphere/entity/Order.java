@@ -53,6 +53,9 @@ public class Order {
     private String trackingNumber;
 
     @Column(length = 20)
+    private String paymentMethod; // COD, ONLINE, etc.
+
+    @Column(length = 20)
     private String paymentStatus; // PENDING, COMPLETED, FAILED
 
     // Optional: if the order was placed under a marketing campaign

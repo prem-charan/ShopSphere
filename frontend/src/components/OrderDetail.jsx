@@ -5,6 +5,14 @@ import { getPaymentsByOrder } from '../services/paymentAPI';
 import CustomerHeader from './CustomerHeader';
 import { FaArrowLeft, FaShoppingBag, FaMapMarkerAlt, FaTruck, FaCreditCard, FaCheckCircle, FaTimesCircle, FaClock, FaFileInvoice } from 'react-icons/fa';
 
+// Helper function for BigDecimal calculation
+const addBigDecimals = (a, b) => {
+  const aStr = a.toString();
+  const bStr = b.toString();
+  const result = parseFloat(aStr) + parseFloat(bStr);
+  return result;
+};
+
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -61,6 +69,12 @@ const OrderDetail = () => {
     return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getEffectiveOrderPaymentStatus = (orderObj) => {
+    const method = orderObj?.paymentMethod || payments?.[0]?.paymentMethod;
+    if (method === 'COD' && orderObj?.status !== 'DELIVERED') return 'PENDING';
+    return orderObj?.paymentStatus;
+  };
+
   const getPaymentBadgeClass = (status) => {
     const statusClasses = {
       PENDING: 'bg-orange-100 text-orange-800',
@@ -72,6 +86,7 @@ const OrderDetail = () => {
 
   const getPaymentStatusBadgeClass = (status) => {
     const statusClasses = {
+      PENDING: 'bg-orange-100 text-orange-800',
       INITIATED: 'bg-blue-100 text-blue-800',
       PROCESSING: 'bg-yellow-100 text-yellow-800',
       SUCCESS: 'bg-green-100 text-green-800',
@@ -97,6 +112,8 @@ const OrderDetail = () => {
 
   const getPaymentStatusIcon = (status) => {
     switch (status) {
+      case 'PENDING':
+        return <FaClock className="text-orange-600" />;
       case 'SUCCESS':
         return <FaCheckCircle className="text-green-600" />;
       case 'FAILED':
@@ -189,8 +206,12 @@ const OrderDetail = () => {
             <FaCreditCard className="text-green-600 mt-1 mr-3 text-xl" />
             <div>
               <p className="text-sm text-gray-600">Payment Status</p>
-              <span className={`px-2 py-1 rounded text-xs font-semibold ${getPaymentBadgeClass(order.paymentStatus)}`}>
-                {order.paymentStatus}
+              <span
+                className={`px-2 py-1 rounded text-xs font-semibold ${getPaymentBadgeClass(
+                  getEffectiveOrderPaymentStatus(order)
+                )}`}
+              >
+                {getEffectiveOrderPaymentStatus(order)}
               </span>
             </div>
           </div>
@@ -261,6 +282,11 @@ const OrderDetail = () => {
                 <tr key={item.orderItemId}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{item.productName}</div>
+                    {order.campaignId && (
+                      <div className="text-xs text-green-600 font-medium mt-1">
+                        🎯 {order.campaignTitle || 'Campaign Offer Applied'}
+                      </div>
+                    )}
                     {item.storeLocation && (
                       <div className="text-xs text-gray-500">Store: {item.storeLocation}</div>
                     )}
@@ -269,7 +295,39 @@ const OrderDetail = () => {
                     {item.productSku || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{item.unitPrice.toFixed(2)}
+                    <div>
+                      {order.campaignId && (
+                        <>
+                          {item.originalPrice && item.unitPrice && item.originalPrice > item.unitPrice ? (
+                            <>
+                              <div className="text-xs text-gray-400 line-through">
+                                ₹{item.originalPrice.toFixed(2)}
+                              </div>
+                              <div className="font-medium text-green-600">
+                                ₹{item.unitPrice.toFixed(2)}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-xs text-gray-400 line-through">
+                                ₹{item.unitPrice.toFixed(2)}
+                              </div>
+                              <div className="font-medium text-green-600">
+                                ₹{(item.unitPrice * 0.8).toFixed(2)}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+                      {!order.campaignId && (
+                        <div>₹{item.unitPrice.toFixed(2)}</div>
+                      )}
+                      {order.campaignId && (
+                        <div className="text-xs text-green-600">
+                          Campaign Price
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.quantity}
@@ -296,6 +354,28 @@ const OrderDetail = () => {
               </span>
             </div>
             
+            {/* Campaign Discount */}
+            {order.campaignId && (
+              <div className="py-2 border-t border-gray-200">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-green-600">Campaign Discount Applied</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded inline-block w-fit">
+                    🎯 {order.campaignTitle || 'Campaign Offer'}
+                  </span>
+                  {order.campaignSavings && order.campaignSavings > 0 && (
+                    <span className="text-xs text-green-600 mt-1">
+                      (Save ₹{order.campaignSavings.toFixed(2)})
+                    </span>
+                  )}
+                  {order.campaignId && (!order.campaignSavings || order.campaignSavings === 0) && (
+                    <span className="text-xs text-green-600 mt-1">
+                      (Save ₹{(item.unitPrice * 0.2).toFixed(2)})
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Discount */}
             {order.discountCode && order.discountAmount && (
               <div className="py-2 border-t border-gray-200">
@@ -320,10 +400,16 @@ const OrderDetail = () => {
             </div>
             
             {/* Savings Message */}
-            {order.discountAmount && (
+            {(order.discountAmount || (order.campaignSavings && order.campaignSavings > 0) || order.campaignId) && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-sm text-green-700 text-center font-medium">
-                  🎉 You saved ₹{parseFloat(order.discountAmount).toFixed(2)}!
+                  🎉 You saved ₹{
+                    addBigDecimals(
+                      (order.campaignSavings && order.campaignSavings > 0) ? order.campaignSavings : 
+                      (order.campaignId ? (order.orderItems?.[0]?.unitPrice * 0.2) : 0),
+                      order.discountAmount || 0
+                    ).toFixed(2)
+                  }!
                 </p>
               </div>
             )}
@@ -336,73 +422,81 @@ const OrderDetail = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Payment History</h2>
           <div className="space-y-4">
-            {payments.map((payment) => (
-              <div key={payment.paymentId} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    {getPaymentStatusIcon(payment.status)}
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusBadgeClass(payment.status)}`}>
-                      {payment.status}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-gray-800">₹{payment.amount.toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(payment.createdAt).toLocaleString()}
+            {payments.map((payment) => {
+              const isCod = payment.paymentMethod === 'COD';
+              const status = isCod && order?.status !== 'DELIVERED' ? 'PENDING' : payment.status;
+              const showTxn = !!payment.transactionId && (!isCod || order?.status === 'DELIVERED');
+
+              return (
+                <div key={payment.paymentId} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      {getPaymentStatusIcon(status)}
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusBadgeClass(status)}`}>
+                        {status}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-gray-800">₹{payment.amount.toFixed(2)}</div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(payment.createdAt).toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Payment Method:</span>
-                    <span className="ml-2 font-semibold">{payment.paymentMethod}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Transaction ID:</span>
-                    <span className="ml-2 font-mono text-xs">{payment.transactionId}</span>
-                  </div>
-                </div>
-
-                {payment.paymentMethod === 'CARD' && payment.cardLastFour && (
-                  <div className="mt-2 text-sm">
-                    <span className="text-gray-600">Card:</span>
-                    <span className="ml-2 font-semibold">
-                      {payment.cardType} ****{payment.cardLastFour}
-                    </span>
-                    {payment.cardHolderName && (
-                      <span className="ml-2 text-gray-600">({payment.cardHolderName})</span>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Payment Method:</span>
+                      <span className="ml-2 font-semibold">{payment.paymentMethod}</span>
+                    </div>
+                    {showTxn && (
+                      <div>
+                        <span className="text-gray-600">Transaction ID:</span>
+                        <span className="ml-2 font-mono text-xs">{payment.transactionId}</span>
+                      </div>
                     )}
                   </div>
-                )}
 
-                {payment.paymentMethod === 'UPI' && payment.upiId && (
-                  <div className="mt-2 text-sm">
-                    <span className="text-gray-600">UPI ID:</span>
-                    <span className="ml-2 font-semibold">{payment.upiId}</span>
-                  </div>
-                )}
+                  {payment.paymentMethod === 'CARD' && payment.cardLastFour && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-gray-600">Card:</span>
+                      <span className="ml-2 font-semibold">
+                        {payment.cardType} ****{payment.cardLastFour}
+                      </span>
+                      {payment.cardHolderName && (
+                        <span className="ml-2 text-gray-600">({payment.cardHolderName})</span>
+                      )}
+                    </div>
+                  )}
 
-                {payment.paymentMethod === 'NET_BANKING' && payment.bankName && (
-                  <div className="mt-2 text-sm">
-                    <span className="text-gray-600">Bank:</span>
-                    <span className="ml-2 font-semibold">{payment.bankName}</span>
-                  </div>
-                )}
+                  {payment.paymentMethod === 'UPI' && payment.upiId && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-gray-600">UPI ID:</span>
+                      <span className="ml-2 font-semibold">{payment.upiId}</span>
+                    </div>
+                  )}
 
-                {payment.status === 'FAILED' && payment.failureReason && (
-                  <div className="mt-3 p-2 bg-red-50 border-l-4 border-red-500 text-sm text-red-700">
-                    <strong>Failure Reason:</strong> {payment.failureReason}
-                  </div>
-                )}
+                  {payment.paymentMethod === 'NET_BANKING' && payment.bankName && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-gray-600">Bank:</span>
+                      <span className="ml-2 font-semibold">{payment.bankName}</span>
+                    </div>
+                  )}
 
-                {payment.notes && (
-                  <div className="mt-2 text-xs text-gray-600 whitespace-pre-line">
-                    {payment.notes}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {payment.status === 'FAILED' && payment.failureReason && (
+                    <div className="mt-3 p-2 bg-red-50 border-l-4 border-red-500 text-sm text-red-700">
+                      <strong>Failure Reason:</strong> {payment.failureReason}
+                    </div>
+                  )}
+
+                  {payment.notes && (
+                    <div className="mt-2 text-xs text-gray-600 whitespace-pre-line">
+                      {payment.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

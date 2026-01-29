@@ -13,13 +13,14 @@ export function getCart() {
   const parsed = safeParse(raw);
   if (!Array.isArray(parsed)) return [];
 
-  // Normalize shape: [{ productId, quantity, unitPrice?, campaignId? }]
+  // Normalize shape: [{ productId, quantity, unitPrice?, campaignId?, campaignTitle? }]
   return parsed
     .map((i) => ({
       productId: Number(i?.productId),
       quantity: Number(i?.quantity),
       unitPrice: i?.unitPrice != null ? Number(i.unitPrice) : null,
       campaignId: i?.campaignId != null ? Number(i.campaignId) : null,
+      campaignTitle: i?.campaignTitle || null,
     }))
     .filter((i) => {
       const okPid = Number.isFinite(i.productId) && i.productId > 0;
@@ -44,6 +45,7 @@ export function addToCart(productId, quantity = 1, options = {}) {
   const qty = Math.max(1, Number(quantity) || 1);
   const unitPrice = options.unitPrice != null ? Number(options.unitPrice) : null;
   const campaignId = options.campaignId != null ? Number(options.campaignId) : null;
+  const campaignTitle = options.campaignTitle || null;
   const cart = getCart();
   const existing = cart.find((i) => i.productId === pid);
 
@@ -52,6 +54,7 @@ export function addToCart(productId, quantity = 1, options = {}) {
     // Preserve any discounted unitPrice if already in cart; otherwise set if provided
     if (existing.unitPrice == null && unitPrice != null) existing.unitPrice = unitPrice;
     if (existing.campaignId == null && campaignId != null) existing.campaignId = campaignId;
+    if (existing.campaignTitle == null && campaignTitle != null) existing.campaignTitle = campaignTitle;
     setCart([...cart]);
     return;
   }
@@ -63,6 +66,7 @@ export function addToCart(productId, quantity = 1, options = {}) {
       quantity: qty,
       unitPrice,
       campaignId,
+      campaignTitle,
     },
   ]);
 }
@@ -82,5 +86,11 @@ export function removeFromCart(productId) {
 
 export function getCartCount() {
   return getCart().reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
+}
+
+export function getCartItemCount(productId) {
+  const cart = getCart();
+  const item = cart.find(i => i.productId === Number(productId));
+  return item ? Number(item.quantity) : 0;
 }
 

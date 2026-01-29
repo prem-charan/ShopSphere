@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -27,15 +26,10 @@ public class Campaign {
     @Column(name = "title", nullable = false, length = 150)
     private String title;
 
-    @Column(name = "target_audience", length = 200)
-    private String targetAudience;
 
     @Column(name = "banner_image_url", length = 500)
     private String bannerImageUrl;
 
-    @NotNull
-    @Column(name = "budget", precision = 12, scale = 2, nullable = false)
-    private BigDecimal budget;
 
     @NotNull
     @Column(name = "start_date", nullable = false)
@@ -65,7 +59,7 @@ public class Campaign {
     @Transient
     public boolean isActive() {
         LocalDate today = LocalDate.now();
-        return (startDate == null || !today.isBefore(startDate)) && (endDate == null || !today.isAfter(endDate));
+        return !today.isBefore(startDate) && !today.isAfter(endDate);
     }
 }
 

@@ -11,6 +11,7 @@ import StoreInventoryManagement from '../components/StoreInventoryManagement';
 import LoyaltyOverview from '../components/LoyaltyOverview';
 import CustomerLoyaltyDetail from '../components/CustomerLoyaltyDetail';
 import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import CampaignManagement from '../components/CampaignManagement';
 import { FaSignOutAlt, FaHome } from 'react-icons/fa';
 
 function AdminDashboard() {
@@ -126,6 +127,16 @@ function AdminDashboard() {
             >
               Analytics
             </Link>
+            <Link
+              to="/admin/campaigns"
+              className={`no-underline font-medium px-4 py-2 rounded-md transition-all whitespace-nowrap ${
+                isActive('/admin/campaigns')
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-indigo-600'
+              }`}
+            >
+              Campaigns
+            </Link>
           </div>
         </div>
       </nav>
@@ -145,6 +156,7 @@ function AdminDashboard() {
             <Route path="/loyalty" element={<LoyaltyOverview />} />
             <Route path="/loyalty/:userId" element={<CustomerLoyaltyDetail />} />
             <Route path="/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/campaigns" element={<CampaignManagement />} />
           </Routes>
         </div>
       </main>

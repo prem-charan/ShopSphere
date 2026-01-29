@@ -13,6 +13,7 @@ import com.shopsphere.repository.OrderRepository;
 import com.shopsphere.repository.CampaignProductRepository;
 import com.shopsphere.repository.CampaignRepository;
 import com.shopsphere.repository.ProductRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,14 +44,21 @@ public class CampaignService {
     }
 
     @Transactional(readOnly = true)
-    public CampaignDTO getCampaign(Long id) {
+    public List<CampaignDTO> getAllCampaigns() {
+        return campaignRepository.findAll().stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CampaignDTO getCampaign(@NonNull Long id) {
         Campaign c = campaignRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
         return toDTO(c);
     }
 
     @Transactional(readOnly = true)
-    public List<CampaignProductViewDTO> getCampaignProducts(Long campaignId) {
+    public List<CampaignProductViewDTO> getCampaignProducts(@NonNull Long campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + campaignId));
         if (!campaign.isActive()) {
@@ -70,9 +78,7 @@ public class CampaignService {
     public CampaignDTO createCampaign(CreateCampaignRequest req) {
         Campaign c = new Campaign();
         c.setTitle(req.getTitle().trim());
-        c.setTargetAudience(req.getTargetAudience());
         c.setBannerImageUrl(req.getBannerImageUrl());
-        c.setBudget(req.getBudget());
         c.setStartDate(req.getStartDate());
         c.setEndDate(req.getEndDate());
 
@@ -91,8 +97,49 @@ public class CampaignService {
         return toDTO(saved);
     }
 
+    @Transactional
+    public CampaignDTO updateCampaign(@NonNull Long id, CreateCampaignRequest req) {
+        Campaign c = campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+        
+        c.setTitle(req.getTitle());
+        c.setBannerImageUrl(req.getBannerImageUrl());
+        c.setStartDate(req.getStartDate());
+        c.setEndDate(req.getEndDate());
+
+        Campaign saved = campaignRepository.save(c);
+
+        // Remove existing campaign products
+        campaignProductRepository.deleteByCampaign_CampaignId(id);
+        
+        // Add new campaign products
+        for (CreateCampaignRequest.CampaignProductInput p : req.getProducts()) {
+            Product product = productRepository.findById(p.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + p.getProductId()));
+            CampaignProduct cp = new CampaignProduct();
+            cp.setCampaign(saved);
+            cp.setProduct(product);
+            cp.setDiscountPercent(p.getDiscountPercent());
+            campaignProductRepository.save(cp);
+        }
+
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public void deleteCampaign(@NonNull Long id) {
+        Campaign c = campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+        
+        // Remove campaign products first
+        campaignProductRepository.deleteByCampaign_CampaignId(id);
+        
+        // Delete the campaign
+        campaignRepository.delete(c);
+    }
+
     @Transactional(readOnly = true)
-    public CampaignReportDTO getReport(Long campaignId) {
+    public CampaignReportDTO getReport(@NonNull Long campaignId) {
         Campaign c = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + campaignId));
 
@@ -101,25 +148,19 @@ public class CampaignService {
                 .map(o -> o.getTotalAmount() == null ? BigDecimal.ZERO : o.getTotalAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal budget = c.getBudget() == null ? BigDecimal.ZERO : c.getBudget();
-        BigDecimal roi = BigDecimal.ZERO;
-        if (budget.compareTo(BigDecimal.ZERO) > 0) {
-            roi = revenue.subtract(budget).divide(budget, 4, RoundingMode.HALF_UP);
-        }
-
-        return new CampaignReportDTO(c.getCampaignId(), c.getTitle(), budget, (long) orders.size(), revenue, roi);
+        return new CampaignReportDTO(c.getCampaignId(), c.getTitle(), (long) orders.size(), revenue);
     }
 
     private CampaignDTO toDTO(Campaign c) {
+        Integer productCount = campaignProductRepository.countByCampaign_CampaignId(c.getCampaignId());
         return new CampaignDTO(
                 c.getCampaignId(),
                 c.getTitle(),
-                c.getTargetAudience(),
                 c.getBannerImageUrl(),
-                c.getBudget(),
                 c.getStartDate(),
                 c.getEndDate(),
-                c.isActive()
+                c.isActive(),
+                productCount
         );
     }
 

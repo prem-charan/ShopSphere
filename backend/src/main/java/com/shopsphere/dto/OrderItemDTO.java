@@ -29,6 +29,8 @@ public class OrderItemDTO {
     @NotNull(message = "Unit price is required")
     private BigDecimal unitPrice;
 
+    private BigDecimal originalPrice; // Original price before campaign discount
+
     private BigDecimal subtotal;
 
     private String storeLocation;

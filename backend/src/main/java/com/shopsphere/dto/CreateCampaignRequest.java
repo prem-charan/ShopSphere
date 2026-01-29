@@ -10,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -22,12 +21,9 @@ public class CreateCampaignRequest {
     @NotBlank
     private String title;
 
-    private String targetAudience;
 
     private String bannerImageUrl;
 
-    @NotNull
-    private BigDecimal budget;
 
     @NotNull
     private LocalDate startDate;

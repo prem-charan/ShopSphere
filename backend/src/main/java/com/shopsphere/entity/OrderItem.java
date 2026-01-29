@@ -44,6 +44,9 @@ public class OrderItem {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal unitPrice;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal originalPrice; // Original price before campaign discount
+
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotal;
 

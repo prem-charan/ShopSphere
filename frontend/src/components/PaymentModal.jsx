@@ -3,7 +3,7 @@ import { initiatePayment, processPayment } from '../services/paymentAPI';
 import { FaMobile, FaMoneyBillWave, FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) => {
-  const [step, setStep] = useState('method'); // method, details, otp, processing, success, failed
+  const [step, setStep] = useState('method'); // method, details, otp, processing, cod_pending, success, failed
   const [paymentMethod, setPaymentMethod] = useState('');
   const [upiId, setUpiId] = useState('');
   const [otp, setOtp] = useState('');
@@ -83,11 +83,11 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
       setPaymentData(response.data);
 
       if (method === 'COD') {
-        // COD is automatically successful
-        setStep('success');
+        // COD is NOT paid now; it will be marked successful only after delivery.
+        setStep('cod_pending');
         setTimeout(() => {
           onSuccess(order.orderId);
-        }, 2000);
+        }, 1200);
       } else {
         setStep('otp');
       }
@@ -318,7 +318,23 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
             </div>
           )}
 
-          {/* Step 5: Success */}
+          {/* Step 5a: COD Pending */}
+          {step === 'cod_pending' && (
+            <div className="text-center py-8">
+              <div className="inline-block p-4 bg-orange-100 rounded-full mb-4">
+                <FaMoneyBillWave className="text-orange-600 text-6xl" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800">Pay On Delivery</h3>
+              <p className="text-gray-600 mt-2">Payment will be collected when your order is delivered.</p>
+              <div className="mt-4 bg-gray-50 rounded-lg p-4 text-left">
+                <p className="text-sm text-gray-600">Payment Status</p>
+                <p className="font-semibold text-gray-800">PENDING</p>
+              </div>
+              <p className="text-sm text-gray-500 mt-4">Redirecting to order details...</p>
+            </div>
+          )}
+
+          {/* Step 5b: Success (UPI) */}
           {step === 'success' && (
             <div className="text-center py-8">
               <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
@@ -326,7 +342,7 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
               </div>
               <h3 className="text-2xl font-bold text-gray-800">Payment Successful!</h3>
               <p className="text-gray-600 mt-2">Your payment has been processed successfully</p>
-              {paymentData && (
+              {paymentData?.transactionId && (
                 <div className="mt-4 bg-gray-50 rounded-lg p-4 text-left">
                   <p className="text-sm text-gray-600">Transaction ID</p>
                   <p className="font-mono font-semibold text-gray-800">{paymentData.transactionId}</p>

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +39,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Count low stock products
     @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQuantity <= :threshold AND p.isActive = true")
     Long countLowStockProducts(@Param("threshold") int threshold);
+
+    @Query("SELECT p FROM Product p WHERE p.isActive = true AND p.productId NOT IN " +
+       "(SELECT cp.product.productId FROM CampaignProduct cp JOIN cp.campaign c " +
+       "WHERE c.startDate <= :today AND c.endDate >= :today)")
+        List<Product> findProductsNotInAnyActiveCampaign(@Param("today") LocalDate today);
+
+    @Query("SELECT p FROM Product p JOIN CampaignProduct cp ON p.productId = cp.product.productId WHERE cp.campaign.campaignId = :campaignId")
+    List<Product> findProductsByCampaignId(@Param("campaignId") Long campaignId);
 }

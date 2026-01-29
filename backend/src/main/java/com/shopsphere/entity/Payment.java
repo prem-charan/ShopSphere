@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "payments")
@@ -65,11 +64,6 @@ public class Payment {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (transactionId == null) {
-            // Generate mock transaction ID
-            transactionId = "TXN" + System.currentTimeMillis() + 
-                          UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        }
     }
 
     @PreUpdate

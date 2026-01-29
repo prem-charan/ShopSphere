@@ -23,8 +23,11 @@ public class OrderResponse {
     private String shippingAddress;
     private String storeLocation;
     private String trackingNumber;
+    private String paymentMethod;
     private String paymentStatus;
     private Long campaignId;
+    private String campaignTitle;
+    private BigDecimal campaignSavings;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemDTO> orderItems;
