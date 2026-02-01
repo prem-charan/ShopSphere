@@ -186,8 +186,8 @@ const LoyaltyPage = () => {
                     disabled={!canAfford || redeeming}
                     className={`w-full py-3 rounded-lg font-semibold transition-all ${
                       canAfford && !redeeming
-                        ? 'bg-purple-600 text-white hover:bg-purple-700'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                     }`}
                   >
                     {redeeming ? 'Processing...' : canAfford ? 'Claim Reward' : 'Not Enough Points'}

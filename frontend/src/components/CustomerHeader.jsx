@@ -51,23 +51,23 @@ const CustomerHeader = () => {
             className="cursor-pointer"
           >
             <Link to="/" state={{ clearFilters: true }}>
-              <h1 className="text-2xl font-bold text-blue-600">ShopSphere</h1>
+              <h1 className="text-2xl font-bold text-slate-800">ShopSphere</h1>
             </Link>
             <Link to="/" state={{ clearFilters: true }}>
-              <p className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer">Your One-Stop Shop</p>
+              <p className="text-sm text-slate-500 hover:text-slate-700 cursor-pointer">Your One-Stop Shop</p>
             </Link>
           </div>
 
           {/* Search Bar */}
           <div className="flex-1 max-w-xl mx-8">
             <form onSubmit={handleSearch} className="relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search for products..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-2 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
               />
             </form>
           </div>
@@ -79,7 +79,7 @@ const CustomerHeader = () => {
                 
                 <button
                   onClick={() => navigate('/loyalty')}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <FaGift />
                   <span>Rewards</span>
@@ -87,7 +87,7 @@ const CustomerHeader = () => {
                 
                 <button
                   onClick={() => navigate('/my-orders')}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors"
                 >
                   <FaShoppingBag />
                   <span>My Orders</span>
@@ -95,12 +95,12 @@ const CustomerHeader = () => {
 
                 <button
                   onClick={() => navigate('/cart')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition relative"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors relative"
                 >
                   <FaShoppingCart />
                   <span>Cart</span>
                   {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+                    <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
                       {cartCount}
                     </span>
                   )}
@@ -108,16 +108,16 @@ const CustomerHeader = () => {
                 
                 <button
                   onClick={() => navigate('/profile')}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
                   title="View Profile"
                 >
-                  <FaUser className="text-gray-600" />
-                  <span className="font-medium text-gray-700">{user?.name}</span>
+                  <FaUser className="text-slate-600" />
+                  <span className="font-medium text-slate-700">{user?.name}</span>
                 </button>
                 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                  className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
                 >
                   <FaSignOutAlt />
                   <span>Logout</span>
@@ -127,13 +127,13 @@ const CustomerHeader = () => {
               <>
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => navigate('/signup')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors"
                 >
                   Sign Up
                 </button>

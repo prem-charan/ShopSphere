@@ -150,8 +150,8 @@ const MyOrders = () => {
             onClick={() => setFilter(status)}
             className={`px-4 py-2 rounded-md whitespace-nowrap transition-colors ${
               filter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-slate-700 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-100'
             }`}
           >
             {status}
@@ -170,7 +170,7 @@ const MyOrders = () => {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-6 py-3 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors"
           >
             Start Shopping
           </button>
@@ -233,7 +233,7 @@ const MyOrders = () => {
                         <button
                           onClick={() => handleCancelOrder(order.orderId)}
                           disabled={cancellingOrderId === order.orderId}
-                          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          className="flex items-center px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
                         >
                           <FaTimes className="mr-2" />
                           {cancellingOrderId === order.orderId ? 'Cancelling...' : 'Cancel Order'}
@@ -241,7 +241,7 @@ const MyOrders = () => {
                       )}
                       <button
                         onClick={() => navigate(`/order/${order.orderId}`)}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        className="flex items-center px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800 transition-colors"
                       >
                         <FaEye className="mr-2" />
                         View Details

@@ -242,14 +242,14 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
               <div className="flex space-x-3 mt-6">
                 <button
                   onClick={() => setStep('method')}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition"
+                  className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={() => handleInitiatePayment()}
                   disabled={!upiId || isProcessing}
-                  className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition"
+                  className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed font-medium transition-colors"
                 >
                   {isProcessing ? 'Processing...' : 'Continue'}
                 </button>
@@ -261,8 +261,8 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
           {step === 'otp' && (
             <div className="space-y-4">
               <div className="text-center mb-6">
-                <div className="inline-block p-4 bg-blue-100 rounded-full mb-3">
-                  <FaMobile className="text-blue-600 text-4xl" />
+                <div className="inline-block p-4 bg-emerald-100 rounded-full mb-3">
+                  <FaMobile className="text-emerald-600 text-4xl" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">Verify OTP</h3>
                 <p className="text-gray-600 text-sm mt-2">
@@ -294,14 +294,14 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
               <div className="flex space-x-3 mt-6">
                 <button
                   onClick={() => setStep('details')}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition"
+                  className="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleVerifyOtp}
                   disabled={otp.length !== 6 || isProcessing}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition"
+                  className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed font-medium transition-colors"
                 >
                   Verify & Pay
                 </button>

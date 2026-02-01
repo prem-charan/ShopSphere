@@ -261,8 +261,8 @@ function Home() {
             }}
             className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
               !selectedCategory
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                ? 'bg-slate-700 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-100'
             }`}
           >
             All Products
@@ -273,8 +273,8 @@ function Home() {
               onClick={() => setSelectedCategory(category)}
               className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
                 selectedCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-slate-700 text-white'
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
               }`}
             >
               {category}

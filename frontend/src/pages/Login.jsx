@@ -141,8 +141,8 @@ function Login() {
             disabled={loading}
             className={`w-full py-3 bg-gradient-to-r ${
               loginType === 'admin'
-                ? 'from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                : 'from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                ? 'from-slate-700 to-slate-900 hover:from-slate-800 hover:to-slate-950'
+                : 'from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
             } text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
           >
             {loading ? (

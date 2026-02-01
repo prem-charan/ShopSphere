@@ -376,7 +376,7 @@ function Cart() {
                   </div>
                   <button
                     onClick={handleProceed}
-                    className="w-full mt-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                    className="w-full mt-4 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
                   >
                     Proceed
                   </button>
@@ -579,7 +579,7 @@ function Cart() {
                   setShowCheckoutModal(false);
                   setOrderError('');
                 }}
-                className="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                className="flex-1 px-4 py-3 bg-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-400 transition-colors"
                 disabled={orderLoading}
               >
                 Cancel
@@ -587,7 +587,7 @@ function Cart() {
               <button
                 onClick={handlePlaceOrder}
                 disabled={orderLoading}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
               >
                 {orderLoading ? 'Placing Order...' : 'Place Order'}
               </button>

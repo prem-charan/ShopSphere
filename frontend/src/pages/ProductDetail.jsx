@@ -391,7 +391,7 @@ function ProductDetail() {
           <p className="text-red-600 text-lg mb-4">{error || 'Product not found'}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             Back to Home
           </button>
@@ -550,7 +550,7 @@ function ProductDetail() {
                   <button
                     onClick={handleBuyNow}
                     disabled={product.stockQuantity === 0}
-                    className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl disabled:bg-slate-400 disabled:cursor-not-allowed"
                   >
                     {product.stockQuantity === 0 ? 'Out of Stock' : 'Buy Now'}
                   </button>
@@ -848,7 +848,7 @@ function ProductDetail() {
                 <button
                   onClick={handlePlaceOrder}
                   disabled={orderLoading}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
                 >
                   {orderLoading ? 'Placing Order...' : 'Place Order'}
                 </button>
