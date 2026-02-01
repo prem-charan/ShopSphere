@@ -308,7 +308,7 @@ function CampaignForm({ campaign, products, onSuccess, onCancel }) {
                               {product.name}
                             </div>
                             <div className="text-sm text-gray-500">
-                              ${Number(product.price).toFixed(2)} • Stock: {product.stockQuantity}
+                              ₹{Number(product.price).toFixed(2)} • Stock: {product.stockQuantity}
                             </div>
                           </div>
                         </div>

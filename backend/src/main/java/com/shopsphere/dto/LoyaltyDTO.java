@@ -16,6 +16,7 @@ public class LoyaltyDTO {
     private Long userId;
     private String userName;
     private String userEmail;
+    private String userPhone;
     private Integer pointsBalance;
     private Integer totalEarned;
     private LocalDateTime createdAt;
@@ -48,12 +49,13 @@ public class LoyaltyDTO {
     }
 
     // Constructor without transactions (for list views)
-    public LoyaltyDTO(Long loyaltyAccountId, Long userId, String userName, String userEmail, 
+    public LoyaltyDTO(Long loyaltyAccountId, Long userId, String userName, String userEmail, String userPhone,
                       Integer pointsBalance, Integer totalEarned, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.loyaltyAccountId = loyaltyAccountId;
         this.userId = userId;
         this.userName = userName;
         this.userEmail = userEmail;
+        this.userPhone = userPhone;
         this.pointsBalance = pointsBalance;
         this.totalEarned = totalEarned;
         this.createdAt = createdAt;

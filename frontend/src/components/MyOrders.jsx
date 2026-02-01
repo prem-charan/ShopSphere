@@ -74,16 +74,16 @@ const MyOrders = () => {
 
   const getOrderTitle = (order) => {
     if (!order.orderItems || order.orderItems.length === 0) {
-      return `Order #${order.orderId}`;
+      return 'Order';
     }
-    
+
     const firstItem = order.orderItems[0].productName;
     const remainingCount = order.orderItems.length - 1;
-    
+
     if (remainingCount === 0) {
-      return `Order #${order.orderId} - ${firstItem}`;
+      return firstItem;
     } else {
-      return `Order #${order.orderId} - ${firstItem} + ${remainingCount} more`;
+      return `${firstItem} + ${remainingCount} more`;
     }
   };
 

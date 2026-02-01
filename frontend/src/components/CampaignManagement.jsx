@@ -268,7 +268,7 @@ function CampaignManagement() {
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="text-sm text-green-600 font-medium">Revenue</div>
-                  <div className="text-2xl font-bold text-green-900">${Number(campaignReport.revenue).toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-green-900">₹{Number(campaignReport.revenue).toFixed(2)}</div>
                 </div>
               </div>
             </div>

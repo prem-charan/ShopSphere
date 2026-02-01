@@ -97,16 +97,19 @@ const OrderDetail = () => {
 
   const getOrderTitle = (order) => {
     if (!order.orderItems || order.orderItems.length === 0) {
-      return `Order #${order.orderId}`;
+      return isAdminView ? `Order #${order.orderId}` : 'Order';
     }
-    
+
     const firstItem = order.orderItems[0].productName;
     const remainingCount = order.orderItems.length - 1;
-    
+
+    // Show "Order #X - " prefix only for admin view
+    const prefix = isAdminView ? `Order #${order.orderId} - ` : '';
+
     if (remainingCount === 0) {
-      return `Order #${order.orderId} - ${firstItem}`;
+      return `${prefix}${firstItem}`;
     } else {
-      return `Order #${order.orderId} - ${firstItem} + ${remainingCount} more`;
+      return `${prefix}${firstItem} + ${remainingCount} more`;
     }
   };
 

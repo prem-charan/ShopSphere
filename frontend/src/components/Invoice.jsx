@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import CustomerHeader from './CustomerHeader';
 import { getOrderById } from '../services/orderAPI';
+import { getPaymentsByOrder } from '../services/paymentAPI';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/userAPI';
 import { loyaltyAPI } from '../services/loyaltyAPI';
@@ -15,9 +16,10 @@ const Invoice = () => {
   const { user } = useAuth();
 
   const [order, setOrder] = useState(null);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [customer, setCustomer] = useState(null); // { name, email }
+  const [customer, setCustomer] = useState(null); // { name, email, phone }
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -26,6 +28,15 @@ const Invoice = () => {
         setError('');
         const orderResponse = await getOrderById(orderId);
         setOrder(orderResponse.data);
+
+        // Fetch payment details
+        try {
+          const paymentResponse = await getPaymentsByOrder(orderId);
+          setPayments(paymentResponse.data || []);
+        } catch (paymentErr) {
+          console.error('Error fetching payments:', paymentErr);
+          // Don't show error for payments, just log it
+        }
       } catch (err) {
         console.error('Error fetching order for invoice:', err);
         setError('Failed to load invoice. Please try again.');
@@ -41,29 +52,38 @@ const Invoice = () => {
     const loadCustomer = async () => {
       if (!order?.customerId) return;
 
-      // Customer view: we already have user name/email in AuthContext
-      if (!isAdminView && user && user.userId === order.customerId) {
-        setCustomer({ name: user.name, email: user.email });
-        return;
-      }
-
-      // Admin view: fetch customer details
-      if (isAdminView) {
-        try {
-          // Prefer existing admin endpoint (already used elsewhere)
-          const loyaltyRes = await loyaltyAPI.getUserDetails(order.customerId);
-          if (loyaltyRes?.data?.userName || loyaltyRes?.data?.userEmail) {
-            setCustomer({ name: loyaltyRes.data.userName, email: loyaltyRes.data.userEmail });
-            return;
-          }
-
-          // Fallback to users endpoint
-          const res = await userAPI.getUserById(order.customerId);
-          setCustomer({ name: res.data.name, email: res.data.email });
-        } catch (err) {
-          console.error('Error fetching customer details for invoice:', err);
-          setCustomer(null);
+      try {
+        // Customer viewing their own invoice - use profile endpoint
+        if (!isAdminView && user && user.userId === order.customerId) {
+          const res = await userAPI.getProfile();
+          setCustomer({
+            name: res.data.name,
+            email: res.data.email,
+            phone: res.data.phone
+          });
         }
+        // Admin viewing invoice - fetch from loyalty API or users endpoint
+        else if (isAdminView) {
+          try {
+            const loyaltyRes = await loyaltyAPI.getUserDetails(order.customerId);
+            if (loyaltyRes?.data?.userName) {
+              setCustomer({
+                name: loyaltyRes.data.userName,
+                email: loyaltyRes.data.userEmail,
+                phone: loyaltyRes.data.userPhone
+              });
+            } else {
+              // Fallback
+              setCustomer({ name: 'Customer', email: '—', phone: '—' });
+            }
+          } catch (err) {
+            console.error('Error fetching customer for admin:', err);
+            setCustomer({ name: 'Customer', email: '—', phone: '—' });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching customer details for invoice:', err);
+        setCustomer({ name: user?.name || 'Customer', email: user?.email || '—', phone: '—' });
       }
     };
 
@@ -161,13 +181,14 @@ const Invoice = () => {
               <h1 className="text-3xl font-bold text-gray-900">Invoice</h1>
               <p className="text-sm text-gray-600 mt-1">ShopSphere</p>
             </div>
-            <div className="text-right text-sm text-gray-700">
-              <div>
-                <span className="font-semibold">Invoice #:</span> {order.orderId}
+            <div className="text-left text-sm text-gray-700">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Order ID:</span>
+                <span>{order.orderId}</span>
               </div>
-              <div>
-                <span className="font-semibold">Order Date:</span>{' '}
-                {new Date(order.createdAt).toLocaleString()}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Order Date:</span>
+                <span>{new Date(order.createdAt).toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold">Payment:</span>
@@ -201,6 +222,9 @@ const Invoice = () => {
                 </div>
                 <div>
                   <span className="font-medium">Email:</span> {customer?.email || '—'}
+                </div>
+                <div>
+                  <span className="font-medium">Phone:</span> {customer?.phone || '—'}
                 </div>
                 <div>
                   <span className="font-medium">Customer ID:</span> {order.customerId}
@@ -283,6 +307,73 @@ const Invoice = () => {
               </div>
             </div>
           </div>
+
+          {/* Payment Details */}
+          {payments.length > 0 && (
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Payment Details</h2>
+              <div className="space-y-4">
+                {payments.map((payment) => {
+                  const isCod = payment.paymentMethod === 'COD';
+                  const status = isCod && order?.status !== 'DELIVERED' ? 'PENDING' : payment.status;
+                  const showTxn = !!payment.transactionId && (!isCod || order?.status === 'DELIVERED');
+
+                  return (
+                    <div key={payment.paymentId} className="border border-gray-200 rounded-lg p-4 text-sm">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            status === 'SUCCESS' || status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                            status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {status}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-800">₹{payment.amount.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(payment.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-gray-600">Payment Method:</span>
+                          <span className="ml-2 font-semibold">{payment.paymentMethod}</span>
+                        </div>
+                        {showTxn && (
+                          <div>
+                            <span className="text-gray-600">Transaction ID:</span>
+                            <span className="ml-2 font-mono text-xs">{payment.transactionId}</span>
+                          </div>
+                        )}
+                        {payment.paymentMethod === 'UPI' && payment.upiId && (
+                          <div>
+                            <span className="text-gray-600">UPI ID:</span>
+                            <span className="ml-2 font-semibold">{payment.upiId}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {payment.status === 'FAILED' && payment.failureReason && (
+                        <div className="mt-3 p-2 bg-red-50 border-l-4 border-red-500 text-xs text-red-700">
+                          <strong>Failure Reason:</strong> {payment.failureReason}
+                        </div>
+                      )}
+
+                      {payment.notes && (
+                        <div className="mt-2 text-xs text-gray-600 whitespace-pre-line">
+                          {payment.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="mt-10 text-xs text-gray-500 border-t border-gray-200 pt-4">
             This is a system-generated invoice from ShopSphere.

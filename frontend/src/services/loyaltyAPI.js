@@ -41,7 +41,10 @@ export const loyaltyAPI = {
   
   redeemReward: (redeemData) => api.post('/loyalty/redeem', redeemData),
   
-  validateDiscountCode: (code) => api.get(`/loyalty/validate-code/${code}`),
+  validateDiscountCode: (code, orderTotal) => {
+    const params = orderTotal ? `?orderTotal=${orderTotal}` : '';
+    return api.get(`/loyalty/validate-code/${code}${params}`);
+  },
   
   getActiveCoupon: (userId) => api.get(`/loyalty/active-coupon/${userId}`),
   

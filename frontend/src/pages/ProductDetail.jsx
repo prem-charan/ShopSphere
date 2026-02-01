@@ -183,8 +183,9 @@ function ProductDetail() {
       setDiscountValidating(true);
       setDiscountError('');
       
-      console.log('Auto-applying discount code:', code);
-      const response = await loyaltyAPI.validateDiscountCode(code);
+      const orderTotal = effectiveUnitPrice * quantity;
+      console.log('Auto-applying discount code:', code, 'with order total:', orderTotal);
+      const response = await loyaltyAPI.validateDiscountCode(code, orderTotal);
       console.log('Validation response:', response.data);
       
       if (response.data.valid) {
@@ -197,10 +198,12 @@ function ProductDetail() {
         console.log('❌ Invalid coupon (auto-apply):', response.data.message);
         // Clear the code if it's invalid
         setDiscountCode('');
+        setDiscountError(response.data.message);
       }
     } catch (err) {
       console.error('Error auto-applying discount:', err);
       setDiscountCode('');
+      setDiscountError('Failed to validate discount code');
     } finally {
       setDiscountValidating(false);
     }
@@ -216,13 +219,14 @@ function ProductDetail() {
       setDiscountValidating(true);
       setDiscountError('');
       
-      console.log('Validating discount code:', discountCode.trim());
-      const response = await loyaltyAPI.validateDiscountCode(discountCode.trim());
+      const orderTotal = effectiveUnitPrice * quantity;
+      console.log('Validating discount code:', discountCode.trim(), 'with order total:', orderTotal);
+      const response = await loyaltyAPI.validateDiscountCode(discountCode.trim(), orderTotal);
       console.log('Validation response:', response.data);
       
       if (response.data.valid) {
         setAppliedDiscount({
-          code: response.data.code,
+          code: discountCode.trim(),
           amount: response.data.discountAmount
         });
         setDiscountError('');

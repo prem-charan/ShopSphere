@@ -23,5 +23,9 @@ public interface CampaignProductRepository extends JpaRepository<CampaignProduct
     @Modifying
     @Query("DELETE FROM CampaignProduct cp WHERE cp.campaign.campaignId = :campaignId")
     void deleteByCampaign_CampaignId(@Param("campaignId") Long campaignId);
+
+    @Modifying
+    @Query("DELETE FROM CampaignProduct cp WHERE cp.product.productId = :productId")
+    void deleteByProduct_ProductId(@Param("productId") Long productId);
 }
 

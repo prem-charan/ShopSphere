@@ -122,17 +122,20 @@ function Cart() {
     try {
       setDiscountValidating(true);
       setDiscountError('');
-      const response = await loyaltyAPI.validateDiscountCode(code);
+      const subtotal = calculateSubtotal();
+      const response = await loyaltyAPI.validateDiscountCode(code, subtotal);
       if (response.data.valid) {
         setAppliedDiscount({ code: code, amount: response.data.discountAmount });
       } else {
         setDiscountCode('');
         setAppliedDiscount(null);
+        setDiscountError(response.data.message);
       }
     } catch (err) {
       console.error('Error auto-applying discount:', err);
       setDiscountCode('');
       setAppliedDiscount(null);
+      setDiscountError('Failed to validate discount code');
     } finally {
       setDiscountValidating(false);
     }
@@ -147,9 +150,10 @@ function Cart() {
     try {
       setDiscountValidating(true);
       setDiscountError('');
-      const response = await loyaltyAPI.validateDiscountCode(discountCode.trim());
+      const subtotal = calculateSubtotal();
+      const response = await loyaltyAPI.validateDiscountCode(discountCode.trim(), subtotal);
       if (response.data.valid) {
-        setAppliedDiscount({ code: response.data.code, amount: response.data.discountAmount });
+        setAppliedDiscount({ code: discountCode.trim(), amount: response.data.discountAmount });
         setDiscountError('');
       } else {
         setDiscountError(response.data.message || 'Invalid discount code');

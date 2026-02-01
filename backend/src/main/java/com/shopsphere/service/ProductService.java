@@ -3,7 +3,9 @@ package com.shopsphere.service;
 import com.shopsphere.dto.ProductDTO;
 import com.shopsphere.entity.Product;
 import com.shopsphere.exception.ResourceNotFoundException;
+import com.shopsphere.repository.CampaignProductRepository;
 import com.shopsphere.repository.ProductRepository;
+import com.shopsphere.repository.StoreProductInventoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,8 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final StoreInventoryService storeInventoryService;
+    private final CampaignProductRepository campaignProductRepository;
+    private final StoreProductInventoryRepository storeInventoryRepository;
 
     @Value("${shopsphere.inventory.low-stock-threshold:10}")
     private int lowStockThreshold;
@@ -138,6 +142,18 @@ public class ProductService {
         log.info("Deleting product with ID: {}", id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
+
+        // Delete related records first to avoid foreign key constraint violations
+
+        // 1. Delete from campaign_products table
+        log.info("Deleting campaign product associations for product ID: {}", id);
+        campaignProductRepository.deleteByProduct_ProductId(id);
+
+        // 2. Delete from store_product_inventory table
+        log.info("Deleting store inventory records for product ID: {}", id);
+        storeInventoryRepository.deleteByProductId(id);
+
+        // 3. Finally delete the product
         productRepository.delete(product);
         log.info("Product deleted successfully with ID: {}", id);
     }

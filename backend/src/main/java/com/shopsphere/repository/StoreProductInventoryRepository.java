@@ -2,6 +2,7 @@ package com.shopsphere.repository;
 
 import com.shopsphere.entity.StoreProductInventory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -47,4 +48,9 @@ public interface StoreProductInventoryRepository extends JpaRepository<StoreProd
     @Query("SELECT s.storeLocation FROM StoreProductInventory s " +
            "WHERE s.productId = :productId AND s.isAvailable = true AND s.stockQuantity > 0")
     List<String> findStoresWithProduct(@Param("productId") Long productId);
+
+    // Delete all inventory entries for a product
+    @Modifying
+    @Query("DELETE FROM StoreProductInventory s WHERE s.productId = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }

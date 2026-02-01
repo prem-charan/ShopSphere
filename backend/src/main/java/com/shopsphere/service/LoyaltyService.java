@@ -75,6 +75,7 @@ public class LoyaltyService {
         dto.setUserId(account.getUserId());
         dto.setUserName(user.getName());
         dto.setUserEmail(user.getEmail());
+        dto.setUserPhone(user.getPhone());
         dto.setPointsBalance(account.getPointsBalance());
         dto.setTotalEarned(account.getTotalEarned());
         dto.setCreatedAt(account.getCreatedAt());
@@ -188,6 +189,7 @@ public class LoyaltyService {
                             account.getUserId(),
                             user.getName(),
                             user.getEmail(),
+                            user.getPhone(),
                             account.getPointsBalance(),
                             account.getTotalEarned(),
                             account.getCreatedAt(),
@@ -287,8 +289,8 @@ public class LoyaltyService {
      * Validate discount code and return discount details
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> validateDiscountCode(String code) {
-        log.info("Validating discount code: {}", code);
+    public Map<String, Object> validateDiscountCode(String code, BigDecimal orderTotal) {
+        log.info("Validating discount code: {} with order total: {}", code, orderTotal);
         
         Map<String, Object> result = new HashMap<>();
         
@@ -363,12 +365,25 @@ public class LoyaltyService {
                 return result;
             }
 
+            // Validate minimum order amount requirements
+            BigDecimal minimumOrderAmount = getMinimumOrderAmount(discountAmount);
+            if (orderTotal.compareTo(minimumOrderAmount) < 0) {
+                log.warn("Order total {} is below minimum required {} for discount code {}", 
+                    orderTotal, minimumOrderAmount, code);
+                result.put("valid", false);
+                result.put("message", String.format("Minimum order amount of ₹%s required for this discount code", minimumOrderAmount));
+                result.put("minimumOrderAmount", minimumOrderAmount);
+                return result;
+            }
+
             result.put("valid", true);
             result.put("discountAmount", discountAmount);
             result.put("message", "Discount code is valid");
             result.put("code", code);
+            result.put("minimumOrderAmount", minimumOrderAmount);
             
-            log.info("Discount code validated successfully: {} - ₹{} off", code, discountAmount);
+            log.info("Discount code validated successfully: {} - ₹{} off (min order: ₹{})", 
+                code, discountAmount, minimumOrderAmount);
             return result;
             
         } catch (NumberFormatException e) {
@@ -381,6 +396,21 @@ public class LoyaltyService {
             result.put("valid", false);
             result.put("message", "Error validating discount code");
             return result;
+        }
+    }
+
+    /**
+     * Get minimum order amount required for a given discount
+     */
+    private BigDecimal getMinimumOrderAmount(int discountAmount) {
+        switch (discountAmount) {
+            case 500:
+                return BigDecimal.valueOf(750);
+            case 150:
+            case 50:
+                return BigDecimal.valueOf(500);
+            default:
+                return BigDecimal.valueOf(500);
         }
     }
 

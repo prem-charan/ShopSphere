@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,17 +128,21 @@ public class LoyaltyController {
      */
     @GetMapping("/validate-code/{code}")
     @CrossOrigin(origins = "http://localhost:5173")
-    public ResponseEntity<Map<String, Object>> validateDiscountCode(@PathVariable String code) {
-        log.info("GET /api/loyalty/validate-code/{} - Validating discount code", code);
+    public ResponseEntity<Map<String, Object>> validateDiscountCode(
+            @PathVariable String code, 
+            @RequestParam(required = false) BigDecimal orderTotal) {
+        log.info("GET /api/loyalty/validate-code/{} - Validating discount code with order total: {}", code, orderTotal);
         try {
-            Map<String, Object> result = loyaltyService.validateDiscountCode(code);
+            // If no order total provided, use zero (for backward compatibility)
+            BigDecimal totalAmount = orderTotal != null ? orderTotal : BigDecimal.ZERO;
+            Map<String, Object> result = loyaltyService.validateDiscountCode(code, totalAmount);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Error validating discount code: ", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("valid", false);
-            errorResponse.put("message", "Invalid or expired discount code");
-            return ResponseEntity.ok(errorResponse);
+            errorResponse.put("message", "Error validating discount code");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 

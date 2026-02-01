@@ -170,6 +170,14 @@ public class OrderService {
             log.info("Discount code: {}", request.getDiscountCode());
             log.info("Discount amount from request: {}", request.getDiscountAmount());
             
+            // Validate minimum order amount for this discount
+            BigDecimal minimumOrderAmount = getMinimumOrderAmount(request.getDiscountAmount().intValue());
+            if (totalAmount.compareTo(minimumOrderAmount) < 0) {
+                log.warn("Order total {} is below minimum required {} for discount code {}", 
+                    totalAmount, minimumOrderAmount, request.getDiscountCode());
+                throw new IllegalArgumentException(String.format("Minimum order amount of ₹%s required for this discount code", minimumOrderAmount));
+            }
+            
             order.setDiscountCode(request.getDiscountCode());
             order.setDiscountAmount(BigDecimal.valueOf(request.getDiscountAmount()));
             
@@ -179,12 +187,13 @@ public class OrderService {
             
             log.info("Total after discount: {}", totalAmount);
             
-            // Ensure total doesn't go negative
+            // Ensure total doesn't go negative (additional safety check)
             if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                log.warn("Total went negative after discount, setting to zero: {}", totalAmount);
                 totalAmount = BigDecimal.ZERO;
             }
             
-            log.info("Final total (after negative check): {}", totalAmount);
+            log.info("Final total (after validation): {}", totalAmount);
         } else {
             log.info("No discount applied - discountCode: {}, discountAmount: {}", 
                 request.getDiscountCode(), request.getDiscountAmount());
@@ -479,6 +488,21 @@ public class OrderService {
         log.info("Response discountAmount: {}", response.getDiscountAmount());
 
         return response;
+    }
+
+    /**
+     * Get minimum order amount required for a given discount
+     */
+    private BigDecimal getMinimumOrderAmount(int discountAmount) {
+        switch (discountAmount) {
+            case 500:
+                return BigDecimal.valueOf(750);
+            case 150:
+            case 50:
+                return BigDecimal.valueOf(500);
+            default:
+                return BigDecimal.valueOf(500);
+        }
     }
 
     private OrderItemDTO convertToOrderItemDTO(OrderItem item) {
