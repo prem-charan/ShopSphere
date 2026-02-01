@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { productAPI } from '../services/api';
-import { FaExclamationTriangle, FaEdit, FaBox } from 'react-icons/fa';
+import { FaEdit, FaBox } from 'react-icons/fa';
 import ProductForm from './ProductForm';
 
 function LowStockAlert() {
@@ -89,7 +89,6 @@ function LowStockAlert() {
       <div className="mb-6">
         <div>
           <h2 className="text-3xl font-bold m-0 mb-2 flex items-center gap-3">
-            <FaExclamationTriangle className="text-orange-500" />
             Low Stock Alerts
           </h2>
           <p className="text-slate-500 m-0">Products that require immediate attention</p>
@@ -151,12 +150,6 @@ function LowStockAlert() {
                   <div className="flex justify-between items-center py-2.5 border-b border-slate-200">
                     <span className="text-slate-500 text-sm">Store:</span>
                     <span className="font-semibold text-slate-800">{product.storeLocation}</span>
-                  </div>
-                )}
-
-                {product.description && (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
-                    <p className="m-0 text-slate-500 text-sm leading-relaxed">{product.description}</p>
                   </div>
                 )}
               </div>

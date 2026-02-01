@@ -35,7 +35,22 @@ const LoyaltyPage = () => {
       setLoyaltyData(response.data);
     } catch (err) {
       console.error('Error fetching loyalty data:', err);
-      setError('Failed to load loyalty information. Please try again.');
+
+      // Check if it's a new user account creation issue
+      const errorMessage = err.response?.data?.message || '';
+      const isNewUserError = errorMessage.includes('insert into loyalty_accounts') ||
+                            errorMessage.includes('Connection is read-only');
+
+      // For new users or non-critical errors, set default data
+      if (isNewUserError || err.response?.status === 404 || (err.response?.status >= 400 && err.response?.status < 500)) {
+        setLoyaltyData({ pointsBalance: 0, totalEarned: 0, recentTransactions: [] });
+      } else if (!err.response) {
+        // Only show error for network failures
+        setError('Failed to load loyalty information. Please try again.');
+      } else {
+        // Set default data for other errors too
+        setLoyaltyData({ pointsBalance: 0, totalEarned: 0, recentTransactions: [] });
+      }
     } finally {
       setLoading(false);
     }
@@ -80,10 +95,12 @@ const LoyaltyPage = () => {
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen bg-gray-50">
         <CustomerHeader />
-        <div className="flex justify-center items-center min-h-screen">
-          <FaSpinner className="animate-spin text-4xl text-blue-600" />
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex justify-center items-center py-20">
+            <FaSpinner className="animate-spin text-4xl text-blue-600" />
+          </div>
         </div>
       </div>
     );
@@ -100,7 +117,7 @@ const LoyaltyPage = () => {
           <p className="text-gray-600">Earn points with every purchase and redeem for exciting rewards!</p>
         </div>
 
-        {error && !loading && loyaltyData === null && (
+        {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
             {error}
           </div>

@@ -213,41 +213,9 @@ function Home() {
       )}
 
 
-      {/* Categories */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          <button
-            onClick={() => {
-              setSelectedCategory('');
-              clearCampaign();
-            }}
-            className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
-              !selectedCategory
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            All Products
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Campaigns (top of items section) */}
+      {/* Campaigns (top of page) */}
       {campaigns.length > 0 && (
-        <div className="max-w-7xl mx-auto px-12 -mt-2 pb-6">
+        <div className="max-w-7xl mx-auto px-12 py-6">
 
           <div className="relative">
             <Slider {...carouselSettings}>
@@ -282,6 +250,38 @@ function Home() {
           </div>
         </div>
       )}
+
+      {/* Categories */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          <button
+            onClick={() => {
+              setSelectedCategory('');
+              clearCampaign();
+            }}
+            className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
+              !selectedCategory
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            All Products
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
+                selectedCategory === category
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 pb-16">

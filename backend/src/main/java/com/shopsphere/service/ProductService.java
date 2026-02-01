@@ -185,8 +185,38 @@ public class ProductService {
         log.info("Updating stock quantity for product ID: {} to {}", id, quantity);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
-        product.setStockQuantity(quantity);
-        Product updatedProduct = productRepository.save(product);
+
+        // If product has a default store location, update store inventory first
+        // This will automatically sync the product's total stock via syncProductTotalStock
+        if (product.getStoreLocation() != null && !product.getStoreLocation().isEmpty()) {
+            try {
+                log.info("Updating store inventory for product {} at store {} to quantity {}",
+                        id, product.getStoreLocation(), quantity);
+                storeInventoryService.updateStockQuantity(id, product.getStoreLocation(), quantity);
+                log.info("Store inventory and product total stock updated successfully");
+            } catch (ResourceNotFoundException e) {
+                log.warn("Store inventory not found for product {} at store {}, updating product stock only",
+                        id, product.getStoreLocation());
+                // If store inventory doesn't exist, update product stock directly
+                product.setStockQuantity(quantity);
+                productRepository.save(product);
+            } catch (Exception e) {
+                log.error("Error updating store inventory for product {} at store {}: {}",
+                        id, product.getStoreLocation(), e.getMessage());
+                // Fallback to updating product stock directly
+                product.setStockQuantity(quantity);
+                productRepository.save(product);
+            }
+        } else {
+            // No default store location, update product stock directly
+            product.setStockQuantity(quantity);
+            productRepository.save(product);
+        }
+
+        // Fetch the updated product to return
+        Product updatedProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
+
         log.info("Stock quantity updated successfully for product ID: {}", id);
         return convertToDTO(updatedProduct);
     }

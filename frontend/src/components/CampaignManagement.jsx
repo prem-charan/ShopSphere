@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { campaignAPI } from '../services/campaignAPI';
 import { productAPI } from '../services/api';
 import CampaignForm from './CampaignForm';
-import { FaPlus, FaChartBar, FaEdit, FaTrash, FaBullhorn, FaCalendarAlt, FaMoneyBillWave } from 'react-icons/fa';
+import { FaPlus, FaChartBar, FaEdit, FaTrash, FaBullhorn, FaCalendarAlt } from 'react-icons/fa';
 
 function CampaignManagement() {
   const [campaigns, setCampaigns] = useState([]);
@@ -119,7 +119,6 @@ function CampaignManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <FaBullhorn className="text-indigo-600" />
             Campaign Management
           </h2>
           <p className="text-gray-600 mt-1">Create and manage marketing campaigns</p>

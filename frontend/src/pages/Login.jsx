@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaEnvelope, FaLock, FaUserShield, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUserShield, FaEye, FaEyeSlash, FaSignInAlt } from 'react-icons/fa';
+import FormInput from '../components/common/FormInput';
 
 function Login() {
   const navigate = useNavigate();
@@ -9,11 +10,11 @@ function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: null // null for customer, 'ADMIN' for admin
+    role: null
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginType, setLoginType] = useState('customer'); // 'customer' or 'admin'
+  const [loginType, setLoginType] = useState('customer');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -33,15 +34,13 @@ function Login() {
     setError('');
 
     try {
-      // Remove role field if null (for customer login)
       const loginData = { ...formData };
       if (loginData.role === null) {
         delete loginData.role;
       }
-      
+
       const userData = await login(loginData);
-      
-      // Redirect based on role
+
       if (userData.role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else {
@@ -55,10 +54,17 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 border border-gray-100">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className={`inline-block p-3 bg-gradient-to-r ${
+            loginType === 'admin'
+              ? 'from-indigo-500 to-purple-500'
+              : 'from-blue-500 to-indigo-500'
+          } rounded-full mb-4 transition-all`}>
+            <FaSignInAlt className="text-white text-2xl" />
+          </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
           <p className="text-gray-600">Sign in to continue to ShopSphere</p>
         </div>
@@ -70,18 +76,18 @@ function Login() {
             onClick={() => handleLoginTypeChange('customer')}
             className={`flex-1 py-3 rounded-lg font-medium transition-all ${
               loginType === 'customer'
-                ? 'bg-blue-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Customer Login
+            Customer
           </button>
           <button
             type="button"
             onClick={() => handleLoginTypeChange('admin')}
             className={`flex-1 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
               loginType === 'admin'
-                ? 'bg-indigo-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -91,69 +97,65 @@ function Login() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your email"
-              />
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <FormInput
+            label="Email Address"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            placeholder="Enter your email"
+            icon={FaEnvelope}
+          />
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your password"
-              />
+          <FormInput
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={formData.password}
+            onChange={handleChange}
+            required
+            placeholder="Enter your password"
+            icon={FaLock}
+            rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
-            </div>
-          </div>
+            }
+          />
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-lg font-medium text-white transition-all ${
+            className={`w-full py-3 bg-gradient-to-r ${
               loginType === 'admin'
-                ? 'bg-indigo-600 hover:bg-indigo-700'
-                : 'bg-blue-600 hover:bg-blue-700'
-            } disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
+                ? 'from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                : 'from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+            } text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
           >
-            {loading ? 'Signing in...' : `Sign in as ${loginType === 'admin' ? 'Admin' : 'Customer'}`}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+              </span>
+            ) : (
+              `Sign in as ${loginType === 'admin' ? 'Admin' : 'Customer'}`
+            )}
           </button>
         </form>
 
@@ -164,7 +166,7 @@ function Login() {
               Don't have an account?{' '}
               <Link
                 to="/signup"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
                 Sign up
               </Link>
@@ -176,9 +178,9 @@ function Login() {
         <div className="mt-4 text-center">
           <Link
             to="/"
-            className="text-gray-500 hover:text-gray-700 text-sm"
+            className="text-gray-500 hover:text-gray-700 text-sm inline-flex items-center gap-1 hover:gap-2 transition-all"
           >
-            ← Back to Home
+            <span>←</span> Back to Home
           </Link>
         </div>
       </div>

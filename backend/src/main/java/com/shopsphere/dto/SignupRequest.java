@@ -1,5 +1,7 @@
 package com.shopsphere.dto;
 
+import com.shopsphere.validation.CustomValidators.ValidPassword;
+import com.shopsphere.validation.CustomValidators.ValidPhone;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,8 +24,11 @@ public class SignupRequest {
     
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
+    @ValidPassword
     private String password;
-    
+
+    @NotBlank(message = "Phone number is required")
+    @ValidPhone
     private String phone;
     
     private String address;

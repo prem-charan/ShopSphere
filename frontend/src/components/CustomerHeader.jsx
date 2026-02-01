@@ -106,10 +106,14 @@ const CustomerHeader = () => {
                   )}
                 </button>
                 
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition cursor-pointer"
+                  title="View Profile"
+                >
                   <FaUser className="text-gray-600" />
                   <span className="font-medium text-gray-700">{user?.name}</span>
-                </div>
+                </button>
                 
                 <button
                   onClick={handleLogout}
