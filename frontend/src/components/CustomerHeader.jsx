@@ -64,7 +64,7 @@ const CustomerHeader = () => {
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search for products..."
+                placeholder="Search for products or stores..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="w-full pl-12 pr-4 py-2 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"

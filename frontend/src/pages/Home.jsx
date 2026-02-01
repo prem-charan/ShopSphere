@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FaSearch, FaShoppingCart, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaChevronLeft, FaChevronRight, FaStore } from 'react-icons/fa';
 import { addToCart } from '../utils/cart';
 import { campaignAPI } from '../services/campaignAPI';
+import { getAllStoreLocations } from '../services/orderAPI';
 import CustomerHeader from '../components/CustomerHeader';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
@@ -23,17 +24,26 @@ function Home() {
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [campaignProducts, setCampaignProducts] = useState([]); // [{ product, discountPercent, campaignPrice }]
   const [productCampaigns, setProductCampaigns] = useState(new Map()); // productId -> campaign info
+  const [stores, setStores] = useState([]);
+  const [searchMode, setSearchMode] = useState('products'); // 'products' or 'stores'
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchCampaigns();
+    fetchStores();
   }, []);
 
   useEffect(() => {
     // Handle search term from navigation state
     if (location.state?.search) {
       setSearchTerm(location.state.search);
+      // Auto-detect search mode based on search term
+      const searchLower = location.state.search.toLowerCase();
+      const foundStore = stores.find(store => 
+        store.toLowerCase().includes(searchLower)
+      );
+      setSearchMode(foundStore ? 'stores' : 'products');
       // Clear the state to prevent re-application on refresh
       window.history.replaceState({}, document.title);
     }
@@ -41,10 +51,11 @@ function Home() {
     // Handle clear filters from navigation state
     if (location.state?.clearFilters) {
       clearCampaign();
+      setSearchMode('products');
       // Clear the state to prevent re-application on refresh
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, stores]);
 
   useEffect(() => {
     // Check for active campaigns for all products
@@ -57,7 +68,9 @@ function Home() {
     try {
       setLoading(true);
       const response = await productAPI.getAllProducts();
-      setProducts(response.data.data);
+      // Handle different response structures
+      const productsData = response.data.data || response.data || [];
+      setProducts(productsData);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -68,7 +81,10 @@ function Home() {
   const fetchCategories = async () => {
     try {
       const response = await productAPI.getAllCategories();
-      setCategories(response.data.data);
+      // Handle different response structures
+      const categoriesData = response.data.data || response.data || [];
+      console.log('Available categories:', categoriesData);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -80,6 +96,15 @@ function Home() {
       setCampaigns(res.data || []);
     } catch (err) {
       console.error('Error fetching campaigns:', err);
+    }
+  };
+
+  const fetchStores = async () => {
+    try {
+      const response = await getAllStoreLocations();
+      setStores(response.data || []);
+    } catch (error) {
+      console.error('Error fetching stores:', error);
     }
   };
 
@@ -129,7 +154,7 @@ function Home() {
     setSelectedCampaignId(null);
     setCampaignProducts([]);
     setSearchTerm('');
-    setSelectedCategory('');
+    setSearchMode('products');
   };
 
   const baseProducts = selectedCampaignId
@@ -151,10 +176,44 @@ function Home() {
       });
 
   const filteredProducts = baseProducts.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    // Category filtering
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    
+    // Debug logging
+    if (selectedCategory) {
+      console.log('Product:', product.name, 'Category:', product.category, 'Selected:', selectedCategory, 'Match:', matchesCategory);
+    }
+    
+    // If no search term, only filter by category
+    if (!searchTerm.trim()) {
+      return matchesCategory;
+    }
+    
+    // Search filtering
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Check if search term matches a store name
+    const matchingStore = stores.find(store => 
+      store.toLowerCase().includes(searchLower)
+    );
+    
+    if (matchingStore) {
+      // Filter by store location AND category
+      return product.storeLocation === matchingStore && matchesCategory;
+    }
+    
+    // Filter by product name AND category
+    const matchesSearch = product.name.toLowerCase().includes(searchLower);
     return matchesSearch && matchesCategory;
   });
+
+  // Debug logging for filtered products count
+  console.log('Total products:', baseProducts.length, 'Filtered products:', filteredProducts.length, 'Selected category:', selectedCategory);
+
+  // Filter stores for store search mode
+  const filteredStores = stores.filter(store => 
+    store.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleProductClick = (productId) => {
     if (!isAuthenticated()) {
@@ -256,7 +315,8 @@ function Home() {
         <div className="flex gap-3 overflow-x-auto pb-2">
           <button
             onClick={() => {
-              setSelectedCategory('');
+              setSelectedCategory(''); // Explicitly clear category
+              setSearchTerm('');
               clearCampaign();
             }}
             className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
@@ -270,7 +330,13 @@ function Home() {
           {categories.map((category) => (
             <button
               key={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => {
+                console.log('Category button clicked:', category);
+                setSelectedCategory(category);
+                setSearchTerm(''); // Clear search term when selecting category
+                clearCampaign();
+                console.log('After click - selectedCategory:', category);
+              }}
               className={`px-6 py-2 rounded-full whitespace-nowrap transition-colors ${
                 selectedCategory === category
                   ? 'bg-slate-700 text-white'
@@ -289,7 +355,91 @@ function Home() {
           <div className="text-center py-20 text-gray-500">
             Loading products...
           </div>
+        ) : searchTerm && stores.find(store => store.toLowerCase().includes(searchTerm.toLowerCase())) ? (
+          // Store search results (show products from matching store)
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <FaStore /> Products from "{stores.find(store => store.toLowerCase().includes(searchTerm.toLowerCase()))}"
+            </h2>
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.productId}
+                    onClick={() => handleProductClick(product.productId)}
+                    className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group"
+                  >
+                    <div className="h-48 bg-gray-200 relative overflow-hidden">
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <FaShoppingCart className="text-6xl" />
+                        </div>
+                      )}
+                      {product.isLowStock && (
+                        <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                          Low Stock
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-lg mb-2 text-gray-800 line-clamp-2">
+                        {product.name}
+                      </h3>
+                      <p className="text-gray-500 text-sm mb-2">{product.category}</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          {product.campaignPrice ? (
+                            <>
+                              <p className="text-2xl font-bold text-blue-600">
+                                ₹{Number(product.campaignPrice).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-gray-500 line-through">
+                                ₹{Number(product.price).toFixed(2)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-2xl font-bold text-blue-600">₹{product.price}</p>
+                          )}
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          product.isLowStock
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {product.stockQuantity} in stock
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <button
+                          onClick={(e) => handleAddToCart(e, product)}
+                          disabled={product.stockQuantity === 0}
+                          className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <FaShoppingCart />
+                            <span>Add to Cart</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <FaStore className="text-6xl text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">No products found in this store</p>
+              </div>
+            )}
+          </div>
         ) : filteredProducts.length > 0 ? (
+          // Regular product search results (including category filtering)
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <div
