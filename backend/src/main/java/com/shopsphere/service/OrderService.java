@@ -362,10 +362,7 @@ public class OrderService {
 
         order.setPaymentStatus(paymentStatus.toUpperCase());
         
-        // Auto-confirm order when payment is completed
-        if (paymentStatus.equalsIgnoreCase("COMPLETED") && order.getStatus().equals("PLACED")) {
-            order.setStatus("CONFIRMED");
-        }
+        // Note: Orders are created directly as CONFIRMED, so no auto-confirmation needed
 
         Order updatedOrder = orderRepository.save(order);
         return convertToOrderResponse(updatedOrder);

@@ -13,7 +13,7 @@ The Order Processing & Fulfillment Module has been successfully implemented with
 
 #### 1. **Entities**
 - `Order.java` - Main order entity with support for ONLINE and IN_STORE orders
-  - Status tracking: PLACED → CONFIRMED → SHIPPED → DELIVERED / CANCELLED
+  - Status tracking: CONFIRMED → SHIPPED → DELIVERED / CANCELLED
   - Payment status: PENDING, COMPLETED, FAILED
   - Supports order notes, tracking numbers, and timestamps
 
@@ -222,7 +222,7 @@ The frontend will start on `http://localhost:3000` or `http://localhost:5173`
 2. Go to Admin Panel → Manage Orders
 3. Filter orders by status
 4. Click "Update" on an order
-5. Change status (e.g., PLACED → CONFIRMED → SHIPPED → DELIVERED)
+5. Change status (e.g., CONFIRMED → SHIPPED → DELIVERED)
 6. Add tracking number when marking as SHIPPED
 7. Add notes for customer
 
@@ -248,9 +248,9 @@ The frontend will start on `http://localhost:3000` or `http://localhost:5173`
 - [ ] Cannot place order if insufficient stock
 
 #### ✅ Order Status Flow
-- [ ] PLACED → CONFIRMED → SHIPPED → DELIVERED (successful flow)
-- [ ] PLACED → CANCELLED (cancellation from early stage)
+- [ ] CONFIRMED → SHIPPED → DELIVERED (successful flow)
 - [ ] CONFIRMED → CANCELLED (cancellation from confirmed stage)
+- [ ] SHIPPED → CANCELLED (cancellation from shipped stage)
 - [ ] Cannot change DELIVERED or CANCELLED orders
 
 #### ✅ Payment Status
@@ -272,7 +272,7 @@ The following tables are automatically created:
 - `order_id` (PK, Auto-increment)
 - `customer_id` (FK to users)
 - `order_type` (ONLINE/IN_STORE)
-- `status` (PLACED/CONFIRMED/SHIPPED/DELIVERED/CANCELLED)
+- `status` (CONFIRMED/SHIPPED/DELIVERED/CANCELLED)
 - `total_amount` (Decimal)
 - `shipping_address` (Text)
 - `store_location` (Varchar)

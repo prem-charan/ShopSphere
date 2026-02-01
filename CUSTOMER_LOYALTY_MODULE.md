@@ -300,11 +300,11 @@ Role: ADMIN
 
 1. **Customer Places Order**
    - Customer completes checkout
-   - Order status: PLACED
+   - Order status: CONFIRMED
 
 2. **Order Processing**
    - Admin/System updates order through statuses:
-     - PLACED → SHIPPED → DELIVERED
+     - CONFIRMED → SHIPPED → DELIVERED
 
 3. **Points Auto-Award (Trigger)**
    - When order status changes to **DELIVERED**

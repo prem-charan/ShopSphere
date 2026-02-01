@@ -6,7 +6,7 @@ import { getPaymentsByOrder } from '../services/paymentAPI';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/userAPI';
 import { loyaltyAPI } from '../services/loyaltyAPI';
-import { FaArrowLeft, FaFilePdf } from 'react-icons/fa';
+import { FaArrowLeft, FaFilePdf, FaTimesCircle } from 'react-icons/fa';
 
 const Invoice = () => {
   const { orderId } = useParams();
@@ -101,6 +101,12 @@ const Invoice = () => {
   }, [order]);
 
   const total = useMemo(() => Number(order?.totalAmount || 0), [order]);
+
+  const getEffectiveOrderPaymentStatus = (orderObj) => {
+    const method = orderObj?.paymentMethod || payments?.[0]?.paymentMethod;
+    if (method === 'COD' && orderObj?.status !== 'DELIVERED') return 'PENDING';
+    return orderObj?.paymentStatus;
+  };
 
   const getStatusBadgeClass = (status) => {
     const statusClasses = {
@@ -212,6 +218,41 @@ const Invoice = () => {
               </div>
             </div>
           </div>
+
+          {/* Cancellation and Refund Information */}
+          {order.status === 'CANCELLED' && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start">
+                <FaTimesCircle className="text-red-600 mt-1 mr-3 text-xl" />
+                <div className="flex-1">
+                  <p className="font-semibold text-red-800 mb-2">Order Cancelled</p>
+                  <p className="text-sm text-red-700 mb-2">This order has been cancelled.</p>
+                  
+                  {/* Refund Information */}
+                  {getEffectiveOrderPaymentStatus(order) === 'COMPLETED' && (
+                    <div className="mt-3 p-3 bg-white border border-red-300 rounded">
+                      <p className="text-sm font-semibold text-green-800 mb-1">Refund Status</p>
+                      <p className="text-xs text-green-700">
+                        Your refund of ₹{order.totalAmount.toFixed(2)} will be processed within 3-5 business days.
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Refund will be credited to your original payment method.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {getEffectiveOrderPaymentStatus(order) === 'PENDING' && (
+                    <div className="mt-3 p-3 bg-white border border-orange-300 rounded">
+                      <p className="text-sm font-semibold text-orange-800 mb-1">No Refund Required</p>
+                      <p className="text-xs text-orange-700">
+                        Payment was not completed, so no refund is applicable.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <div className="text-sm">

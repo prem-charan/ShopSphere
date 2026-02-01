@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getOrdersByCustomer } from '../services/orderAPI';
+import { getOrdersByCustomer, cancelOrder } from '../services/orderAPI';
 import { useAuth } from '../context/AuthContext';
 import CustomerHeader from './CustomerHeader';
-import { FaShoppingBag, FaTruck, FaCheckCircle, FaTimes, FaEye, FaTag } from 'react-icons/fa';
+import { FaShoppingBag, FaTruck, FaCheckCircle, FaTimes, FaTag, FaEye } from 'react-icons/fa';
 
 const MyOrders = () => {
   const { user } = useAuth();
@@ -12,6 +12,7 @@ const MyOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     if (user && user.userId) {
@@ -31,6 +32,38 @@ const MyOrders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      setCancellingOrderId(orderId);
+      await cancelOrder(orderId);
+      
+      // Update the order status locally
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.orderId === orderId 
+            ? { ...order, status: 'CANCELLED' }
+            : order
+        )
+      );
+      
+      // Show success message
+      alert('Order cancelled successfully. If payment was made, refund will be processed in 3-5 business days.');
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      alert('Failed to cancel order. Please try again.');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
+  const canCancelOrder = (order) => {
+    return order.status === 'CONFIRMED' || order.status === 'SHIPPED';
   };
 
   const filteredOrders = filter === 'ALL' 
@@ -195,13 +228,25 @@ const MyOrders = () => {
                         <span> • {order.storeLocation}</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => navigate(`/order/${order.orderId}`)}
-                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      <FaEye className="mr-2" />
-                      View Details
-                    </button>
+                    <div className="flex gap-2">
+                      {canCancelOrder(order) && (
+                        <button
+                          onClick={() => handleCancelOrder(order.orderId)}
+                          disabled={cancellingOrderId === order.orderId}
+                          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <FaTimes className="mr-2" />
+                          {cancellingOrderId === order.orderId ? 'Cancelling...' : 'Cancel Order'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => navigate(`/order/${order.orderId}`)}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        <FaEye className="mr-2" />
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

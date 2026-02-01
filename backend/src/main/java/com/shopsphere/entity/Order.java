@@ -108,6 +108,6 @@ public class Order {
     }
 
     public boolean canBeCancelled() {
-        return "PLACED".equalsIgnoreCase(status) || "CONFIRMED".equalsIgnoreCase(status);
+        return "CONFIRMED".equalsIgnoreCase(status) || "SHIPPED".equalsIgnoreCase(status);
     }
 }
