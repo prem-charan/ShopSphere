@@ -91,45 +91,4 @@ public class AuthService {
                 user.getRole()
         );
     }
-
-    @Transactional
-    public AuthResponse adminSignup(SignupRequest request, String adminSecretKey) {
-        // Verify admin secret key (you can configure this in application.properties)
-        String expectedSecretKey = "ADMIN_SECRET_KEY_2024"; // Change this!
-        
-        if (!expectedSecretKey.equals(adminSecretKey)) {
-            throw new RuntimeException("Invalid admin secret key");
-        }
-
-        log.info("Admin signup request for email: {}", request.getEmail());
-
-        // Check if user already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
-        }
-
-        // Create new admin user
-        User admin = new User();
-        admin.setName(request.getName());
-        admin.setEmail(request.getEmail());
-        admin.setPassword(passwordEncoder.encode(request.getPassword()));
-        admin.setRole("ADMIN");
-        admin.setPhone(request.getPhone());
-        admin.setAddress(request.getAddress());
-        admin.setIsActive(true);
-
-        User savedAdmin = userRepository.save(admin);
-        log.info("Admin registered successfully: {}", savedAdmin.getEmail());
-
-        // Generate JWT token
-        String token = jwtUtil.generateToken(savedAdmin.getEmail(), savedAdmin.getRole());
-
-        return new AuthResponse(
-                token,
-                savedAdmin.getUserId(),
-                savedAdmin.getName(),
-                savedAdmin.getEmail(),
-                savedAdmin.getRole()
-        );
-    }
 }

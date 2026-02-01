@@ -50,21 +50,4 @@ public class AuthController {
             );
         }
     }
-
-    @PostMapping("/admin/signup")
-    public ResponseEntity<ApiResponse<AuthResponse>> adminSignup(
-            @Valid @RequestBody SignupRequest request,
-            @RequestHeader("X-Admin-Secret-Key") String adminSecretKey) {
-        log.info("POST /api/auth/admin/signup - Admin signup");
-        try {
-            AuthResponse response = authService.adminSignup(request, adminSecretKey);
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success("Admin registered successfully", response)
-            );
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(e.getMessage())
-            );
-        }
-    }
 }

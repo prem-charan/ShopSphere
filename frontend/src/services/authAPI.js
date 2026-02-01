@@ -7,12 +7,6 @@ export const auth = {
   // Login (customer or admin)
   login: (data) => api.post('/auth/login', data),
 
-  // Admin signup (requires secret key)
-  adminSignup: (data, secretKey) => 
-    api.post('/auth/admin/signup', data, {
-      headers: { 'X-Admin-Secret-Key': secretKey }
-    }),
-
   // Logout (client-side)
   logout: () => {
     localStorage.removeItem('token');
