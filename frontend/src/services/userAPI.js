@@ -1,4 +1,4 @@
-import api from './api';
+import api from './axiosInstance';
 
 export const userAPI = {
   getUserById: (id) => api.get(`/users/${id}`),

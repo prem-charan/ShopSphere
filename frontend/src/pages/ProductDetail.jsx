@@ -66,42 +66,29 @@ function ProductDetail() {
   }, [location.state, user, product]);
 
   const checkActiveCampaigns = async () => {
-    console.log('=== checkActiveCampaigns called for product:', id);
-    console.log('Product object:', product);
     try {
-      console.log('=== Checking active campaigns for product:', id);
       const response = await campaignAPI.getActiveCampaigns();
       const campaigns = response.data || [];
-      console.log('Found campaigns:', campaigns.length);
-      console.log('Campaigns:', campaigns);
       
       for (const campaign of campaigns) {
         try {
-          console.log('Checking campaign:', campaign.campaignId, campaign.title);
           const campaignProductsRes = await campaignAPI.getCampaignProducts(campaign.campaignId);
           const campaignProducts = campaignProductsRes.data || [];
-          console.log('Campaign products for', campaign.campaignId, ':', campaignProducts.length);
           
           const productInCampaign = campaignProducts.find(cp => cp.product.productId === parseInt(id));
           
           if (productInCampaign) {
-            console.log('Found product in campaign:', campaign.campaignId, productInCampaign);
             setActiveCampaign({
               campaignId: campaign.campaignId,
               title: campaign.title,
               discountPercent: productInCampaign.discountPercent,
               campaignPrice: productInCampaign.campaignPrice
             });
-            console.log('Set active campaign:', campaign.title, 'price:', productInCampaign.campaignPrice);
             break;
           }
         } catch (err) {
           console.error('Error checking campaign products:', err);
         }
-      }
-      
-      if (!activeCampaign) {
-        console.log('No active campaign found for product:', id);
       }
     } catch (err) {
       console.error('Error fetching active campaigns:', err);
@@ -115,16 +102,6 @@ function ProductDetail() {
 
   const isCampaignPrice = campaignPriceFromNav != null || activeCampaign?.campaignPrice != null;
   const currentCampaignId = campaignIdFromNav || activeCampaign?.campaignId || null;
-
-  console.log('=== FINAL Price Calculation ===');
-  console.log('Product ID:', id);
-  console.log('Product price:', product?.price);
-  console.log('Campaign price from nav:', campaignPriceFromNav);
-  console.log('Active campaign:', activeCampaign);
-  console.log('Effective unit price:', effectiveUnitPrice);
-  console.log('Is campaign price:', isCampaignPrice);
-  console.log('Current campaign ID:', currentCampaignId);
-  console.log('=============================');
 
   // Auto-fetch and apply active coupon when checkout modal opens
   useEffect(() => {
@@ -141,7 +118,6 @@ function ProductDetail() {
       // Fetch stores where this product is available WITH quantities
       const inventoryResponse = await getInventoryByProduct(id);
       setAvailableStores(inventoryResponse.data || []);
-      console.log('Product inventory:', inventoryResponse.data);
     } catch (err) {
       setError('Failed to load product details');
       console.error('Error:', err);
@@ -161,20 +137,15 @@ function ProductDetail() {
 
   const fetchAndApplyActiveCoupon = async () => {
     try {
-      console.log('Checking for active coupon for user:', user.userId);
       const response = await loyaltyAPI.getActiveCoupon(user.userId);
       
       if (response.data.hasCoupon && response.data.couponCode) {
-        console.log('Active coupon found:', response.data.couponCode);
         // Auto-apply the coupon
         setDiscountCode(response.data.couponCode);
         await handleApplyDiscountAuto(response.data.couponCode);
-      } else {
-        console.log('No active coupon found for user');
       }
     } catch (err) {
       console.error('Error fetching active coupon:', err);
-      // Don't show error to user, just proceed without auto-applying
     }
   };
 
@@ -184,18 +155,14 @@ function ProductDetail() {
       setDiscountError('');
       
       const orderTotal = effectiveUnitPrice * quantity;
-      console.log('Auto-applying discount code:', code, 'with order total:', orderTotal);
       const response = await loyaltyAPI.validateDiscountCode(code, orderTotal);
-      console.log('Validation response:', response.data);
       
       if (response.data.valid) {
         setAppliedDiscount({
           code: code,
           amount: response.data.discountAmount
         });
-        console.log('✅ Discount automatically applied:', code, '- Amount:', response.data.discountAmount);
       } else {
-        console.log('❌ Invalid coupon (auto-apply):', response.data.message);
         // Clear the code if it's invalid
         setDiscountCode('');
         setDiscountError(response.data.message);
@@ -220,9 +187,7 @@ function ProductDetail() {
       setDiscountError('');
       
       const orderTotal = effectiveUnitPrice * quantity;
-      console.log('Validating discount code:', discountCode.trim(), 'with order total:', orderTotal);
       const response = await loyaltyAPI.validateDiscountCode(discountCode.trim(), orderTotal);
-      console.log('Validation response:', response.data);
       
       if (response.data.valid) {
         setAppliedDiscount({
@@ -230,16 +195,11 @@ function ProductDetail() {
           amount: response.data.discountAmount
         });
         setDiscountError('');
-        console.log('Discount applied successfully:', response.data.discountAmount);
       } else {
         setDiscountError(response.data.message || 'Invalid discount code');
         setAppliedDiscount(null);
-        console.log('Discount validation failed:', response.data.message);
       }
     } catch (error) {
-      console.error('Error validating discount code:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       setDiscountError(error.response?.data?.message || 'Failed to validate discount code. Please try again.');
       setAppliedDiscount(null);
     } finally {
@@ -319,11 +279,6 @@ function ProductDetail() {
       discountAmount: appliedDiscount ? appliedDiscount.amount : null
     };
 
-    console.log('=== PREPARING ORDER DATA (Not created yet) ===');
-    console.log('appliedDiscount object:', appliedDiscount);
-    console.log('orderData.discountCode:', orderData.discountCode);
-    console.log('orderData.discountAmount:', orderData.discountAmount);
-
     // Store order data and show payment modal
     setPendingOrderData(orderData);
     setShowCheckoutModal(false);
@@ -336,18 +291,8 @@ function ProductDetail() {
       setOrderLoading(true);
       setOrderError('');
 
-      console.log('=== CREATING ORDER WITH PAYMENT ===');
-      console.log('Payment method:', paymentMethod);
-      console.log('Order data:', pendingOrderData);
-
       // Create the order
       const orderResponse = await createOrder(pendingOrderData);
-      
-      console.log('=== ORDER CREATED RESPONSE ===');
-      console.log('Full response.data:', orderResponse.data);
-      console.log('response.data.totalAmount:', orderResponse.data.totalAmount);
-      console.log('response.data.discountCode:', orderResponse.data.discountCode);
-      console.log('response.data.discountAmount:', orderResponse.data.discountAmount);
       
       setCreatedOrder(orderResponse.data);
       

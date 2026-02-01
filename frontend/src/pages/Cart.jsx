@@ -122,7 +122,6 @@ function Cart() {
     try {
       setDiscountValidating(true);
       setDiscountError('');
-      const subtotal = calculateSubtotal();
       const response = await loyaltyAPI.validateDiscountCode(code, subtotal);
       if (response.data.valid) {
         setAppliedDiscount({ code: code, amount: response.data.discountAmount });
@@ -150,7 +149,6 @@ function Cart() {
     try {
       setDiscountValidating(true);
       setDiscountError('');
-      const subtotal = calculateSubtotal();
       const response = await loyaltyAPI.validateDiscountCode(discountCode.trim(), subtotal);
       if (response.data.valid) {
         setAppliedDiscount({ code: discountCode.trim(), amount: response.data.discountAmount });

@@ -34,13 +34,6 @@ const OrderDetail = () => {
       setLoading(true);
       setError('');
       const orderResponse = await getOrderById(orderId);
-      console.log('=== OrderDetail - Fetched order ===');
-      console.log('Full order data:', orderResponse.data);
-      console.log('Order status:', orderResponse.data.status);
-      console.log('Tracking number:', orderResponse.data.trackingNumber);
-      console.log('totalAmount:', orderResponse.data.totalAmount);
-      console.log('discountCode:', orderResponse.data.discountCode);
-      console.log('discountAmount:', orderResponse.data.discountAmount);
       setOrder(orderResponse.data);
       
       // Fetch payment history for this order

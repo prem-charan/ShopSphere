@@ -31,13 +31,6 @@ const PaymentModal = ({ pendingOrderData, onCreateOrder, onSuccess, onCancel }) 
   };
 
   const totalAmount = calculateTotal();
-  
-  // Debug logging
-  console.log('=== PAYMENT MODAL RECEIVED ===');
-  console.log('Pending order data:', pendingOrderData);
-  console.log('Calculated total amount:', totalAmount);
-  console.log('Discount code:', pendingOrderData?.discountCode);
-  console.log('Discount amount:', pendingOrderData?.discountAmount);
 
   const paymentMethods = [
     { id: 'UPI', name: 'UPI Payment', icon: FaMobile, color: 'purple', description: 'Pay using Google Pay, PhonePe, Paytm, etc.' },
