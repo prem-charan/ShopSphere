@@ -585,9 +585,9 @@ function ProductDetail() {
         {/* Additional Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <div className="bg-white p-6 rounded-xl shadow-md text-center">
-            <div className="text-3xl mb-2">🚚</div>
-            <h3 className="font-semibold mb-1">Free Shipping</h3>
-            <p className="text-sm text-gray-600">On orders over ₹500</p>
+            <div className="text-3xl mb-2">⚡</div>
+            <h3 className="font-semibold mb-1">Fast Delivery</h3>
+            <p className="text-sm text-gray-600">Quick dispatch & delivery</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md text-center">
             <div className="text-3xl mb-2">🔒</div>
@@ -595,9 +595,9 @@ function ProductDetail() {
             <p className="text-sm text-gray-600">100% secure transactions</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md text-center">
-            <div className="text-3xl mb-2">↩️</div>
-            <h3 className="font-semibold mb-1">Easy Returns</h3>
-            <p className="text-sm text-gray-600">30-day return policy</p>
+            <div className="text-3xl mb-2">✅</div>
+            <h3 className="font-semibold mb-1">Quality Assurance</h3>
+            <p className="text-sm text-gray-600">100% genuine products</p>
           </div>
         </div>
 
