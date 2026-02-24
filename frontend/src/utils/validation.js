@@ -29,28 +29,18 @@ export const validatePhone = (phone) => {
     return 'Phone number is required';
   }
 
-  const cleanedPhone = phone.replace(/[\s\-\(\)\.]/g, '');
+  // Remove only spaces and hyphens for display purposes
+  const cleanedPhone = phone.replace(/[\s\-]/g, '');
 
-  if (!/^\+?\d{10,15}$/.test(cleanedPhone)) {
-    return 'Invalid phone number format. Use 10-15 digits.';
+  // Must be exactly 10 digits
+  if (!/^\d{10}$/.test(cleanedPhone)) {
+    return 'Phone number must be exactly 10 digits';
   }
 
-  // Extract the actual phone number (remove country code if present)
-  let phoneNumber = cleanedPhone;
-  if (cleanedPhone.startsWith('+91')) {
-    phoneNumber = cleanedPhone.substring(3);
-  } else if (cleanedPhone.startsWith('+')) {
-    phoneNumber = cleanedPhone.substring(1);
-  }
-
-  // For Indian phone numbers: must be 10 digits and start with 6, 7, 8, or 9
-  if (phoneNumber.length === 10) {
-    const firstDigit = phoneNumber.charAt(0);
-    if (firstDigit !== '6' && firstDigit !== '7' && firstDigit !== '8' && firstDigit !== '9') {
-      return 'Invalid phone number';
-    }
-  } else {
-    return 'Phone number must be 10 digits';
+  // For Indian phone numbers: must start with 6, 7, 8, or 9
+  const firstDigit = cleanedPhone.charAt(0);
+  if (firstDigit !== '6' && firstDigit !== '7' && firstDigit !== '8' && firstDigit !== '9') {
+    return 'Phone number must start with 6, 7, 8, or 9';
   }
 
   return null;
@@ -74,8 +64,19 @@ export const validateName = (name) => {
     return 'Name is required';
   }
 
-  if (name.trim().length < 2) {
+  const trimmedName = name.trim();
+
+  if (trimmedName.length < 2) {
     return 'Name must be at least 2 characters';
+  }
+
+  if (trimmedName.length > 100) {
+    return 'Name must be less than 100 characters';
+  }
+
+  // Only allow letters, spaces, hyphens, and apostrophes - NO NUMBERS
+  if (!/^[a-zA-Z\s\-']+$/.test(trimmedName)) {
+    return 'Name can only contain letters, spaces, hyphens, and apostrophes (no numbers or special characters)';
   }
 
   return null;

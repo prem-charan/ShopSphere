@@ -4,7 +4,6 @@ import com.shopsphere.dto.SalesAnalyticsDTO;
 import com.shopsphere.entity.Order;
 import com.shopsphere.entity.OrderItem;
 import com.shopsphere.entity.Product;
-import com.shopsphere.repository.OrderItemRepository;
 import com.shopsphere.repository.OrderRepository;
 import com.shopsphere.repository.ProductRepository;
 import com.shopsphere.repository.UserRepository;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 

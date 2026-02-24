@@ -209,15 +209,6 @@ public class OrderService {
         log.info("Order discountCode: {}", savedOrder.getDiscountCode());
         log.info("Order discountAmount: {}", savedOrder.getDiscountAmount());
 
-        // Award loyalty points immediately on order confirmation
-        try {
-            loyaltyService.earnPointsFromOrder(savedOrder.getCustomerId(), savedOrder.getOrderId(), savedOrder.getTotalAmount());
-            log.info("Loyalty points awarded for order: {}", savedOrder.getOrderId());
-        } catch (Exception e) {
-            log.error("Failed to award loyalty points for order {}: {}", savedOrder.getOrderId(), e.getMessage());
-            // Don't fail the order creation if loyalty points fail
-        }
-
         return convertToOrderResponse(savedOrder);
     }
 
@@ -270,6 +261,7 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         String newStatus = request.getStatus().toUpperCase();
+        String previousStatus = order.getStatus();
         
         // Validate status transition
         if (!isValidStatusTransition(order.getStatus(), newStatus)) {
@@ -320,6 +312,17 @@ public class OrderService {
             
             // Create payment record for COD
             createCODPaymentRecord(order, transactionId);
+        }
+
+        // Award loyalty points only when order is delivered (first time)
+        if ("DELIVERED".equals(newStatus) && !"DELIVERED".equalsIgnoreCase(previousStatus)) {
+            try {
+                loyaltyService.earnPointsFromOrder(order.getCustomerId(), order.getOrderId(), order.getTotalAmount());
+                log.info("Loyalty points awarded for delivered order: {}", order.getOrderId());
+            } catch (Exception e) {
+                log.error("Failed to award loyalty points for delivered order {}: {}", order.getOrderId(), e.getMessage());
+                // Don't fail status update if loyalty points fail
+            }
         }
 
         Order updatedOrder = orderRepository.save(order);

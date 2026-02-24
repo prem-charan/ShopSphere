@@ -27,7 +27,15 @@ const Invoice = () => {
         setLoading(true);
         setError('');
         const orderResponse = await getOrderById(orderId);
-        setOrder(orderResponse.data);
+        const fetchedOrder = orderResponse.data;
+
+        if (fetchedOrder?.status !== 'DELIVERED') {
+          setError('Invoice will be available once your order is delivered.');
+          setOrder(null);
+          return;
+        }
+
+        setOrder(fetchedOrder);
 
         // Fetch payment details
         try {

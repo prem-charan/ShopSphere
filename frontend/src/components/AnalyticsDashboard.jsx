@@ -187,7 +187,7 @@ const AnalyticsDashboard = () => {
             <FaChartLine className="text-indigo-600" />
             Daily Sales (Last 7 Days)
           </h3>
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 space-y-3">
             {analytics?.dailySales && analytics.dailySales.length > 0 ? (
               analytics.dailySales.map((day, index) => {
                 const maxRevenue = Math.max(...analytics.dailySales.map(d => parseFloat(d.revenue)));

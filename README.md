@@ -177,7 +177,7 @@ src/main/java/com/shopsphere/
    mvn clean install
    mvn spring-boot:run
    ```
-4. **Backend will start** at `http://localhost:8080`
+4. **Backend will start** at `http://localhost:8081`
 
 ### Frontend Setup
 1. **Navigate to frontend directory**:
@@ -335,7 +335,7 @@ src/main/java/com/shopsphere/
 ### Backend Configuration
 ```properties
 # Server Configuration
-server.port=8080
+server.port=8081
 spring.application.name=shopsphere-backend
 
 # Database Configuration
@@ -364,7 +364,7 @@ shopsphere.inventory.low-stock-threshold=10
 ### Frontend Configuration
 ```javascript
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:8081/api';
 
 // Axios Instance Configuration
 const api = axios.create({

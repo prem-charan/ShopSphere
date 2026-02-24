@@ -165,15 +165,27 @@ const OrderDetail = () => {
             Back to Orders
           </button>
 
-          <button
-            onClick={() =>
-              navigate(isAdminView ? `/admin/orders/${orderId}/invoice` : `/order/${orderId}/invoice`)
-            }
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition"
-          >
-            <FaFileInvoice />
-            View Invoice
-          </button>
+          {order.status === 'DELIVERED' ? (
+            <button
+              onClick={() =>
+                navigate(isAdminView ? `/admin/orders/${orderId}/invoice` : `/order/${orderId}/invoice`)
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition"
+            >
+              <FaFileInvoice />
+              View Invoice
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-600 rounded-lg cursor-not-allowed"
+              title="Invoice is available after delivery"
+              disabled
+            >
+              <FaFileInvoice />
+              Invoice Pending
+            </button>
+          )}
         </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
